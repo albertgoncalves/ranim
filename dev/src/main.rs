@@ -1,9 +1,3 @@
-extern crate glutin_window;
-extern crate graphics;
-extern crate opengl_graphics;
-extern crate piston;
-extern crate rand;
-
 use glutin_window::GlutinWindow;
 use graphics::math::Matrix2d;
 use graphics::Transformed;
@@ -23,22 +17,25 @@ const FRAME_RECT: [f64; 4] = [0.0, 0.0, FRAME_WIDTH, FRAME_HEIGHT];
 
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
 const DARK_GRAY: [f32; 4] = [0.2, 0.2, 0.2, 1.0];
+const LINE_WIDTH: f64 = 1.15;
 
 const RNG_POINT_X_LOWER: f64 = 0.0;
 const RNG_POINT_X_UPPER: f64 = FRAME_WIDTH;
 const RNG_POINT_Y_LOWER: f64 = 0.0;
 const RNG_POINT_Y_UPPER: f64 = FRAME_HEIGHT;
+const START_SPEED: f64 = 0.0;
 
-const RNG_RANGE_LOWER: f64 = -1.0;
-const RNG_RANGE_UPPER: f64 = 1.0;
+const N: usize = 20;
+const K: f64 = 0.015;
+const L: f64 = 7.5;
 
-const LINE_WIDTH: f64 = 1.0;
-
-const RELOAD: u16 = 60;
+const RELOAD: u16 = 60 * 5;
 
 struct Point {
     x: f64,
     y: f64,
+    x_speed: f64,
+    y_speed: f64,
 }
 
 impl Point {
@@ -52,61 +49,61 @@ impl Point {
                 RNG_POINT_Y_LOWER,
                 RNG_POINT_Y_UPPER,
             )),
+            x_speed: START_SPEED,
+            y_speed: START_SPEED,
         }
     }
 }
 
-struct State {
-    gl: GlGraphics,
-    rng: ThreadRng,
-    range: Uniform<f64>,
-    counter: u16,
-    a: Point,
-    b: Point,
+#[allow(clippy::comparison_chain)]
+fn update(points: &mut [Point]) {
+    for i in 0..N {
+        for j in i..N {
+            if points[i].x < points[j].x {
+                points[i].x_speed += K;
+                points[j].x_speed -= K;
+            } else if points[j].x < points[i].x {
+                points[i].x_speed -= K;
+                points[j].x_speed += K;
+            }
+            if points[i].y < points[j].y {
+                points[i].y_speed += K;
+                points[j].y_speed -= K;
+            } else if points[j].y < points[i].y {
+                points[i].y_speed -= K;
+                points[j].y_speed += K;
+            }
+        }
+    }
+    for point in points.iter_mut() {
+        point.x += point.x_speed;
+        point.y += point.y_speed;
+    }
 }
 
-impl State {
-    fn new(gl: GlGraphics, rng: ThreadRng) -> Self {
-        Self {
-            gl,
-            rng,
-            range: Uniform::new_inclusive(RNG_RANGE_LOWER, RNG_RANGE_UPPER),
-            counter: 0,
-            a: Point::new(rng),
-            b: Point::new(rng),
-        }
-    }
-
-    fn reset(&mut self) {
-        self.counter = 0;
-        self.a = Point::new(self.rng);
-        self.b = Point::new(self.rng);
-    }
-
-    fn update(&mut self) {
-        if RELOAD < self.counter {
-            self.reset();
-        } else {
-            self.counter += 1;
-            self.a.x += self.rng.sample(self.range);
-            self.a.y += self.rng.sample(self.range);
-            self.b.x += self.rng.sample(self.range);
-            self.b.y += self.rng.sample(self.range);
-        }
-    }
-
-    fn render(&mut self, args: &RenderArgs) {
-        let line: [f64; 4] = [self.a.x, self.a.y, self.b.x, self.b.y];
-        self.gl.draw(args.viewport(), |context, gl| {
-            let transform: Matrix2d = context.transform.trans(
-                (args.window_size[0] / 2.0) - HALF_FRAME_WIDTH,
-                (args.window_size[1] / 2.0) - HALF_FRAME_HEIGHT,
+fn render(gl: &mut GlGraphics, args: &RenderArgs, points: &[Point]) {
+    gl.draw(args.viewport(), |context, gl| {
+        let transform: Matrix2d = context.transform.trans(
+            (args.window_size[0] / 2.0) - HALF_FRAME_WIDTH,
+            (args.window_size[1] / 2.0) - HALF_FRAME_HEIGHT,
+        );
+        graphics::clear(LIGHT_GRAY, gl);
+        graphics::rectangle(DARK_GRAY, FRAME_RECT, transform, gl);
+        for point in points {
+            graphics::line(
+                LIGHT_GRAY,
+                LINE_WIDTH,
+                [
+                    point.x,
+                    point.y,
+                    point.x - (point.x_speed * L),
+                    point.y - (point.y_speed * L),
+                ],
+                transform,
+                gl,
             );
-            graphics::clear(LIGHT_GRAY, gl);
-            graphics::rectangle(DARK_GRAY, FRAME_RECT, transform, gl);
-            graphics::line(LIGHT_GRAY, LINE_WIDTH, line, transform, gl);
-        });
-    }
+        }
+    });
 }
 
 fn main() {
@@ -117,13 +114,26 @@ fn main() {
             .exit_on_esc(true)
             .build()
             .unwrap();
-    let mut state: State =
-        State::new(GlGraphics::new(opengl), rand::thread_rng());
     let mut events: Events = Events::new(EventSettings::new());
+    let mut gl: GlGraphics = GlGraphics::new(opengl);
+    let rng: ThreadRng = rand::thread_rng();
+    let mut counter: u16 = 0;
+    let mut points: Vec<Point> = Vec::with_capacity(N);
+    for _ in 0..N {
+        points.push(Point::new(rng));
+    }
     while let Some(e) = events.next(&mut window) {
         if let Some(args) = e.render_args() {
-            state.render(&args);
-            state.update();
+            render(&mut gl, &args, &points);
+            if RELOAD < counter {
+                counter = 0;
+                for point in &mut points {
+                    *point = Point::new(rng);
+                }
+            } else {
+                counter += 1;
+                update(&mut points)
+            }
         }
     }
 }
