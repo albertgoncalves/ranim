@@ -8,6 +8,7 @@ use piston::window::WindowSettings;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
+use std::mem;
 
 const FRAME_WIDTH: f64 = 800.0;
 const FRAME_HEIGHT: f64 = 700.0;
@@ -30,6 +31,17 @@ const K: f64 = 0.015;
 const L: f64 = 7.5;
 
 const RELOAD: u16 = 60 * 5;
+
+macro_rules! init_array {
+    ($t:ty, $n:expr, $f:expr $(,)*) => {{
+        let mut xs: [mem::MaybeUninit<$t>; $n] =
+            unsafe { mem::MaybeUninit::uninit().assume_init() };
+        for x in &mut xs[..] {
+            *x = mem::MaybeUninit::new($f())
+        }
+        unsafe { mem::transmute::<_, [$t; $n]>(xs) }
+    }};
+}
 
 struct Point {
     x: f64,
@@ -118,10 +130,7 @@ fn main() {
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let rng: ThreadRng = rand::thread_rng();
     let mut counter: u16 = 0;
-    let mut points: Vec<Point> = Vec::with_capacity(N);
-    for _ in 0..N {
-        points.push(Point::new(rng));
-    }
+    let mut points: [Point; N] = init_array!(Point, N, || { Point::new(rng) });
     while let Some(e) = events.next(&mut window) {
         if let Some(args) = e.render_args() {
             render(&mut gl, &args, &points);
