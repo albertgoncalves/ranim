@@ -1,80 +1,127 @@
-use glutin_window::GlutinWindow as Window;
-use graphics::{clear, math, rectangle, types, Transformed};
-use opengl_graphics::{GlGraphics, OpenGL};
-use piston::event_loop::{EventSettings, Events};
-use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
-use piston::window::WindowSettings;
+use graphics::Transformed;
+use piston::event_loop;
+use piston::input::RenderEvent;
+use piston::window;
+use rand::Rng;
 
-const FRAME_WIDTH: f64 = 900.0;
-const FRAME_HEIGHT: f64 = 550.0;
+const FRAME_WIDTH: f64 = 800.0;
+const FRAME_HEIGHT: f64 = 700.0;
 const HALF_FRAME_WIDTH: f64 = FRAME_WIDTH / 2.0;
 const HALF_FRAME_HEIGHT: f64 = FRAME_HEIGHT / 2.0;
+const FRAME_RECT: [f64; 4] = [0.0, 0.0, FRAME_WIDTH, FRAME_HEIGHT];
 
-const LIGHT_GRAY: [f32; 4] = [0.965, 0.965, 0.965, 1.0];
+const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
 const DARK_GRAY: [f32; 4] = [0.2, 0.2, 0.2, 1.0];
 
-const SQUARE_WIDTH: f64 = 150.0;
-const MINUS_HALF_SQUARE_WIDTH: f64 = -1.0 * (SQUARE_WIDTH / 2.0);
+const RNG_POINT_X_LOWER: f64 = 0.0;
+const RNG_POINT_X_UPPER: f64 = FRAME_WIDTH;
+const RNG_POINT_Y_LOWER: f64 = 0.0;
+const RNG_POINT_Y_UPPER: f64 = FRAME_HEIGHT;
 
-/* NOTE: Animation state. */
-pub struct State {
-    gl: GlGraphics,
-    rotation: f64,
+const RNG_RANGE_LOWER: f64 = -1.0;
+const RNG_RANGE_UPPER: f64 = 1.0;
+
+const LINE_WIDTH: f64 = 1.0;
+
+const RELOAD: u16 = 60;
+
+struct Point {
+    x: f64,
+    y: f64,
+}
+
+impl Point {
+    fn new(mut rng: rand::rngs::ThreadRng) -> Self {
+        Self {
+            x: rng.sample(rand::distributions::Uniform::new_inclusive(
+                RNG_POINT_X_LOWER,
+                RNG_POINT_X_UPPER,
+            )),
+            y: rng.sample(rand::distributions::Uniform::new_inclusive(
+                RNG_POINT_Y_LOWER,
+                RNG_POINT_Y_UPPER,
+            )),
+        }
+    }
+}
+
+struct State {
+    gl: opengl_graphics::GlGraphics,
+    rng: rand::rngs::ThreadRng,
+    range: rand::distributions::Uniform<f64>,
+    counter: u16,
+    a: Point,
+    b: Point,
 }
 
 impl State {
-    fn render(&mut self, args: &RenderArgs) {
-        let square: types::Rectangle =
-            rectangle::square(0.0, 0.0, SQUARE_WIDTH);
-        let rotation: f64 = self.rotation;
-        self.gl.draw(args.viewport(), |c, gl| {
-            let transform: math::Matrix2d = c
-                .transform
-                .trans(args.window_size[0] / 2.0, args.window_size[1] / 2.0);
-            let offset_transform: math::Matrix2d = transform
-                .trans(-1.0 * HALF_FRAME_WIDTH, -1.0 * HALF_FRAME_HEIGHT);
-            clear(LIGHT_GRAY, gl);
-            rectangle(
-                DARK_GRAY,
-                [0.0, 0.0, FRAME_WIDTH, FRAME_HEIGHT],
-                offset_transform,
-                gl,
-            );
-            rectangle(
-                LIGHT_GRAY,
-                square,
-                transform
-                    .rot_rad(rotation)
-                    .trans(MINUS_HALF_SQUARE_WIDTH, MINUS_HALF_SQUARE_WIDTH),
-                gl,
-            );
-        });
+    fn new(
+        gl: opengl_graphics::GlGraphics,
+        rng: rand::rngs::ThreadRng,
+    ) -> Self {
+        Self {
+            gl,
+            rng,
+            range: rand::distributions::Uniform::new_inclusive(
+                RNG_RANGE_LOWER,
+                RNG_RANGE_UPPER,
+            ),
+            counter: 0,
+            a: Point::new(rng),
+            b: Point::new(rng),
+        }
     }
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    fn update(&mut self, args: &UpdateArgs) {
-        self.rotation += 1.0 * args.dt;
+
+    fn reset(&mut self) {
+        self.counter = 0;
+        self.a = Point::new(self.rng);
+        self.b = Point::new(self.rng);
+    }
+
+    fn update(&mut self) {
+        if RELOAD < self.counter {
+            self.reset();
+        } else {
+            self.counter += 1;
+            self.a.x += self.rng.sample(self.range);
+            self.a.y += self.rng.sample(self.range);
+            self.b.x += self.rng.sample(self.range);
+            self.b.y += self.rng.sample(self.range);
+        }
+    }
+
+    fn render(&mut self, args: &piston::input::RenderArgs) {
+        let line: [f64; 4] = [self.a.x, self.a.y, self.b.x, self.b.y];
+        self.gl.draw(args.viewport(), |context, gl| {
+            let transform: graphics::math::Matrix2d = context.transform.trans(
+                (args.window_size[0] / 2.0) - HALF_FRAME_WIDTH,
+                (args.window_size[1] / 2.0) - HALF_FRAME_HEIGHT,
+            );
+            graphics::clear(LIGHT_GRAY, gl);
+            graphics::rectangle(DARK_GRAY, FRAME_RECT, transform, gl);
+            graphics::line(LIGHT_GRAY, LINE_WIDTH, line, transform, gl);
+        });
     }
 }
 
 fn main() {
-    let opengl: OpenGL = OpenGL::V3_2;
-    let mut window: Window =
-        WindowSettings::new("ranim", [FRAME_WIDTH, FRAME_HEIGHT])
+    let opengl: opengl_graphics::OpenGL = opengl_graphics::OpenGL::V3_2;
+    let mut window: glutin_window::GlutinWindow =
+        window::WindowSettings::new("ranim", [FRAME_WIDTH, FRAME_HEIGHT])
             .graphics_api(opengl)
             .exit_on_esc(true)
             .build()
             .unwrap();
-    let mut state: State = State {
-        gl: GlGraphics::new(opengl),
-        rotation: 0.0,
-    };
-    let mut events: Events = Events::new(EventSettings::new());
+    let mut state: State = State::new(
+        opengl_graphics::GlGraphics::new(opengl),
+        rand::thread_rng(),
+    );
+    let mut events: event_loop::Events =
+        event_loop::Events::new(event_loop::EventSettings::new());
     while let Some(e) = events.next(&mut window) {
         if let Some(args) = e.render_args() {
             state.render(&args);
-        }
-        if let Some(args) = e.update_args() {
-            state.update(&args);
+            state.update();
         }
     }
 }
