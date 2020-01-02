@@ -13,3 +13,7 @@ rand = "0.7.2"
 [[bin]]
 name = "orbits"
 path = "src/orbits.rs"
+
+[[bin]]
+name = "webs"
+path = "src/webs.rs"
