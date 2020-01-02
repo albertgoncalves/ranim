@@ -83,16 +83,16 @@ fn point_of_intersection(
 
 macro_rules! replace_neighbor {
     ($x:expr, $a:expr, $b:expr $(,)?) => {
-        for (i, neighbor) in $x.neighbors.iter().enumerate() {
+        for neighbor in &mut $x.neighbors {
             if *neighbor == $a {
-                $x.neighbors[i] = $b;
+                *neighbor = $b;
                 break;
             }
         }
     };
 }
 
-#[allow(clippy::comparison_chain)]
+#[allow(clippy::comparison_chain, clippy::many_single_char_names)]
 fn insert(
     rng: &mut ThreadRng,
     range: &Uniform<f64>,
