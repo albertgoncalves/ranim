@@ -147,7 +147,7 @@ macro_rules! replace_neighbor {
     };
 }
 
-#[allow(clippy::comparison_chain, clippy::many_single_char_names)]
+#[allow(clippy::comparison_chain)]
 fn insert(
     rng: &mut ThreadRng,
     range: &Uniform<f64>,
@@ -385,15 +385,13 @@ fn main() {
                 nodes.clear();
                 edges.clear();
                 init(&mut rng, &range, &mut nodes, &mut edges);
-            } else {
-                counter += 1;
-                if INTERVAL < counter {
-                    counter = 0;
-                    insert(&mut rng, &range, &mut nodes, &mut edges);
-                }
+            } else if INTERVAL < counter {
+                insert(&mut rng, &range, &mut nodes, &mut edges);
+                counter = 0;
             }
             update(&mut nodes);
             render(&mut gl, &args, &edges);
+            counter += 1;
         }
     }
 }
