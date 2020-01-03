@@ -1,3 +1,5 @@
+mod point;
+
 use glutin_window::GlutinWindow;
 use graphics::math::Matrix2d;
 use graphics::Transformed;
@@ -5,6 +7,7 @@ use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent};
 use piston::window::WindowSettings;
+use point::Point;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
@@ -35,11 +38,6 @@ const THRESHOLD: usize = CAPACITY - 3;
 
 const INTERVAL: u16 = 5;
 
-struct Point {
-    x: f64,
-    y: f64,
-}
-
 struct Node {
     point: Point,
     next: Point,
@@ -59,49 +57,6 @@ struct Candidate {
 struct Intersection<'a> {
     point: Point,
     edge: &'a mut Edge,
-}
-
-fn squared_distance(a: &Point, b: &Point) -> f64 {
-    let x: f64 = a.x - b.x;
-    let y: f64 = a.y - b.y;
-    (x * x) + (y * y)
-}
-
-#[allow(clippy::many_single_char_names)]
-fn point_of_intersection(
-    a: &Point,
-    b: &Point,
-    c: &Point,
-    d: &Point,
-) -> Option<Point> {
-    let x1: f64 = a.x;
-    let x2: f64 = b.x;
-    let x3: f64 = c.x;
-    let x4: f64 = d.x;
-    let y1: f64 = a.y;
-    let y2: f64 = b.y;
-    let y3: f64 = c.y;
-    let y4: f64 = d.y;
-    let denominator: f64 = ((x1 - x2) * (y3 - y4)) - ((y1 - y2) * (x3 - x4));
-    if denominator != 0.0 {
-        let t: f64 =
-            (((x1 - x3) * (y3 - y4)) - ((y1 - y3) * (x3 - x4))) / denominator;
-        let u: f64 =
-            -(((x1 - x2) * (y1 - y3)) - ((y1 - y2) * (x1 - x3))) / denominator;
-        if (0.0 <= t) && (t <= 1.0) && (0.0 <= u) && (u <= 1.0) {
-            return Some(Point {
-                x: x1 + (t * (x2 - x1)),
-                y: y1 + (t * (y2 - y1)),
-            });
-        }
-    }
-    None
-}
-
-macro_rules! empty_point {
-    () => {
-        Point { x: 0.0, y: 0.0 }
-    };
 }
 
 fn init(
@@ -168,7 +123,7 @@ fn insert(
         let mut intersections: Vec<Intersection> = Vec::new();
         unsafe {
             for edge in edges.iter_mut() {
-                if let Some(point) = point_of_intersection(
+                if let Some(point) = point::intersection(
                     &candidate.a,
                     &candidate.b,
                     &(*edge.a).point,
@@ -180,9 +135,9 @@ fn insert(
         }
         let n: usize = intersections.len();
         if n == 1 {
-            /* NOTE: a---b    a--p--b
-             *             ->    |
-             *                   q
+            /* NOTE: `a`---`b`    `a`--`p`--`b`
+             *                 ->       |
+             *                         `q`
              */
             let intersection: Intersection = intersections.pop().unwrap();
             let edge: &mut Edge = intersection.edge;
@@ -209,9 +164,9 @@ fn insert(
             edges.push(Edge { a: p, b: q });
             return;
         } else if 1 < n {
-            /* NOTE: l.a---l.b    l.a--p--l.b
-             *                 ->      |
-             *       r.a---r.b    r.a--q--r.b
+            /* NOTE: `l.a`---`l.b`    `l.a`--`p`--`l.b`
+             *                     ->         |
+             *       `r.a`---`r.b`    `r.a`--`q`--`r.b`
              */
             intersections
                 .sort_by(|a, b| a.point.x.partial_cmp(&b.point.x).unwrap());
@@ -262,7 +217,8 @@ fn update(nodes: &mut Vec<Node>) {
         unsafe {
             for neighbor in &node.neighbors {
                 let neighbor_point: &Point = &(*(*neighbor)).point;
-                if CUTOFF < squared_distance(node_point, neighbor_point) {
+                if CUTOFF < point::squared_distance(node_point, neighbor_point)
+                {
                     n += 1.0;
                     x += node_x - neighbor_point.x;
                     y += node_y - neighbor_point.y;
