@@ -11,6 +11,10 @@ piston2d-opengl_graphics = "0.69.0"
 rand = "0.7.2"
 
 [[bin]]
+name = "growth"
+path = "src/growth.rs"
+
+[[bin]]
 name = "orbits"
 path = "src/orbits.rs"
 
