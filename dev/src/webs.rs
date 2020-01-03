@@ -18,7 +18,7 @@ const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
 const GREEN: [f32; 4] = [0.5, 1.0, 0.87, 1.0];
 const CYAN: [f32; 4] = [0.17, 0.82, 0.76, 0.15];
 
-const LINE_WIDTH: f64 = 0.75;
+const LINE_WIDTH: f64 = 0.7;
 const RADIUS: f64 = 3.5;
 const RADIUS_2: f64 = RADIUS * 2.0;
 const PAD: f64 = 15.0;
@@ -26,14 +26,14 @@ const PAD_2: f64 = PAD * 2.0;
 
 const UPPER_BOUND: f64 = 350.0;
 const LOWER_BOUND: f64 = -UPPER_BOUND;
-const CUTOFF: f64 = 350.0;
-const DRAG: f64 = 0.0015;
+const CUTOFF: f64 = 400.0;
+const DRAG: f64 = 0.00175;
 
 const INIT: usize = 2;
-const CAPACITY: usize = 500;
+const CAPACITY: usize = 1000;
 const THRESHOLD: usize = CAPACITY - 3;
 
-const INTERVAL: u16 = 10;
+const INTERVAL: u16 = 5;
 
 struct Point {
     x: f64,
