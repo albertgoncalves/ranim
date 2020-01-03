@@ -21,8 +21,8 @@ const LINE_WIDTH: f64 = 1.15;
 const PAD: f64 = 10.0;
 const PAD_2: f64 = PAD * 2.0;
 
-const POINT_LOWER: f64 = -300.0;
-const POINT_UPPER: f64 = 300.0;
+const UPPER_BOUND: f64 = 300.0;
+const LOWER_BOUND: f64 = -UPPER_BOUND;
 const START_SPEED: f64 = 0.0;
 
 const N: usize = 20;
@@ -153,7 +153,7 @@ fn main() {
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut counter: u16 = 0;
     let mut rng: ThreadRng = rand::thread_rng();
-    let range: Uniform<f64> = Uniform::new_inclusive(POINT_LOWER, POINT_UPPER);
+    let range: Uniform<f64> = Uniform::new_inclusive(LOWER_BOUND, UPPER_BOUND);
     let mut points: [Point; N] =
         array!(Point, N, || point!(rng, range, START_SPEED));
     while let Some(e) = events.next(&mut window) {
