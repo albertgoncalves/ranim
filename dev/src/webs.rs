@@ -17,21 +17,22 @@ const CYAN: [f32; 4] = [0.17, 0.82, 0.76, 0.35];
 const POINT_LOWER: f64 = -300.0;
 const POINT_UPPER: f64 = 300.0;
 
+#[derive(Debug)]
 struct Point {
     x: f64,
     y: f64,
 }
 
-/* NOTE: `neighbors` are indices into `nodes: Vec<Node>`. */
+#[derive(Debug)]
 struct Node {
     point: Point,
-    neighbors: Vec<usize>,
+    neighbors: Vec<*mut Node>,
 }
 
-/* NOTE: `a` and `b` are indices into `nodes: Vec<Node>`. */
+#[derive(Debug)]
 struct Edge {
-    a: usize,
-    b: usize,
+    a: *mut Node,
+    b: *mut Node,
 }
 
 struct Candidate {
@@ -39,9 +40,9 @@ struct Candidate {
     b: Point,
 }
 
-struct Intersection {
+struct Intersection<'a> {
     point: Point,
-    index: usize,
+    edge: &'a mut Edge,
 }
 
 fn squared_distance(a: &Point, b: &Point) -> f64 {
@@ -111,14 +112,16 @@ fn insert(
             },
         };
         let mut intersections: Vec<Intersection> = Vec::new();
-        for (i, edge) in edges.iter().enumerate() {
-            if let Some(point) = point_of_intersection(
-                &candidate.a,
-                &candidate.b,
-                &nodes[edge.a].point,
-                &nodes[edge.b].point,
-            ) {
-                intersections.push(Intersection { point, index: i });
+        unsafe {
+            for edge in edges.iter_mut() {
+                if let Some(point) = point_of_intersection(
+                    &candidate.a,
+                    &candidate.b,
+                    &(*edge.a).point,
+                    &(*edge.b).point,
+                ) {
+                    intersections.push(Intersection { point, edge });
+                }
             }
         }
         let n: usize = intersections.len();
@@ -128,22 +131,24 @@ fn insert(
              *                   q
              */
             let intersection: Intersection = intersections.pop().unwrap();
-            let edge: &Edge = &edges[intersection.index];
-            let a: usize = edge.a;
-            let b: usize = edge.b;
-            let p: usize = nodes.len();
-            let q: usize = p + 1;
+            let edge: &mut Edge = intersection.edge;
             nodes.push(Node {
                 point: intersection.point,
-                neighbors: vec![a, b, p],
+                neighbors: vec![edge.a, edge.b],
             });
+            let p: *mut Node = nodes.last_mut().unwrap();
             nodes.push(Node {
                 point: candidate.a,
-                neighbors: vec![q],
+                neighbors: vec![p],
             });
-            replace_neighbor!(nodes[a], b, p);
-            replace_neighbor!(nodes[b], a, p);
-            edges[intersection.index] = Edge { a, b: p };
+            let q: *mut Node = nodes.last_mut().unwrap();
+            edge.b = p;
+            unsafe {
+                replace_neighbor!(*edge.a, edge.b, p);
+                replace_neighbor!(*edge.b, edge.a, q);
+                (*p).neighbors.push(q);
+            }
+            let b: *mut Node = edge.b;
             edges.push(Edge { a: p, b });
             edges.push(Edge { a: p, b: q });
             return;
@@ -156,28 +161,29 @@ fn insert(
                 .sort_by(|a, b| a.point.x.partial_cmp(&b.point.x).unwrap());
             let l_intersection: Intersection = intersections.pop().unwrap();
             let r_intersection: Intersection = intersections.pop().unwrap();
-            let l_edge: &Edge = &edges[l_intersection.index];
-            let r_edge: &Edge = &edges[r_intersection.index];
-            let l_a: usize = l_edge.a;
-            let l_b: usize = l_edge.b;
-            let r_a: usize = r_edge.a;
-            let r_b: usize = r_edge.b;
-            let p: usize = nodes.len();
-            let q: usize = p + 1;
+            let l_edge: &mut Edge = l_intersection.edge;
+            let r_edge: &mut Edge = r_intersection.edge;
             nodes.push(Node {
                 point: l_intersection.point,
-                neighbors: vec![l_a, l_b, q],
+                neighbors: vec![l_edge.a, l_edge.b],
             });
+            let p: *mut Node = nodes.last_mut().unwrap();
             nodes.push(Node {
                 point: r_intersection.point,
-                neighbors: vec![r_a, r_b, p],
+                neighbors: vec![r_edge.a, r_edge.b, p],
             });
-            replace_neighbor!(nodes[l_a], l_b, p);
-            replace_neighbor!(nodes[l_b], l_a, p);
-            replace_neighbor!(nodes[r_a], r_b, q);
-            replace_neighbor!(nodes[r_b], r_a, q);
-            edges[l_intersection.index] = Edge { a: l_a, b: p };
-            edges[r_intersection.index] = Edge { a: r_a, b: q };
+            let q: *mut Node = nodes.last_mut().unwrap();
+            unsafe {
+                replace_neighbor!(*l_edge.a, l_edge.b, p);
+                replace_neighbor!(*l_edge.b, l_edge.a, p);
+                replace_neighbor!(*r_edge.a, r_edge.b, q);
+                replace_neighbor!(*r_edge.b, r_edge.a, q);
+                (*p).neighbors.push(q);
+            }
+            l_edge.b = p;
+            r_edge.b = q;
+            let l_b: *mut Node = l_edge.b;
+            let r_b: *mut Node = r_edge.b;
             edges.push(Edge { a: p, b: l_b });
             edges.push(Edge { a: q, b: r_b });
             edges.push(Edge { a: p, b: q });
@@ -191,23 +197,28 @@ fn main() {
     let range: Uniform<f64> = Uniform::new_inclusive(POINT_LOWER, POINT_UPPER);
     let mut nodes: Vec<Node> = Vec::with_capacity(CAPACITY);
     let mut edges: Vec<Edge> = Vec::with_capacity(CAPACITY);
-    for i in 0..START {
-        let j: usize = i * 2;
-        let k: usize = j + 1;
+    for _ in 0..START {
         nodes.push(Node {
             point: Point {
                 x: rng.sample(range),
                 y: rng.sample(range),
             },
-            neighbors: vec![k],
+            neighbors: Vec::with_capacity(1),
         });
+        let a: *mut Node = nodes.last_mut().unwrap();
         nodes.push(Node {
             point: Point {
                 x: rng.sample(range),
                 y: rng.sample(range),
             },
-            neighbors: vec![j],
+            neighbors: Vec::with_capacity(1),
         });
-        edges.push(Edge { a: j, b: k })
+        let b: *mut Node = nodes.last_mut().unwrap();
+        unsafe {
+            (*a).neighbors.push(b);
+            (*b).neighbors.push(a);
+        }
+        edges.push(Edge { a, b })
     }
+    insert(&mut rng, &range, &mut nodes, &mut edges);
 }
