@@ -8,7 +8,6 @@ use piston::window::WindowSettings;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
-use std::mem;
 
 const WINDOW_WIDTH: f64 = 400.0;
 const WINDOW_HEIGHT: f64 = 400.0;
@@ -26,88 +25,73 @@ const LOWER_BOUND: f64 = -UPPER_BOUND;
 const START_SPEED: f64 = 0.0;
 
 const N: usize = 20;
+const M: usize = N - 1;
 const K: f64 = 0.015;
 const L: f64 = 7.5;
 
 const RELOAD: u16 = 60 * 8;
 
-macro_rules! array {
-    ($t:ty, $n:expr, $f:expr $(,)?) => {{
-        let mut xs: [mem::MaybeUninit<$t>; $n] =
-            unsafe { mem::MaybeUninit::uninit().assume_init() };
-        for x in &mut xs[..] {
-            *x = mem::MaybeUninit::new($f())
-        }
-        unsafe { mem::transmute::<_, [$t; $n]>(xs) }
-    }};
-}
-
-struct Point {
-    x: f64,
-    y: f64,
-    x_speed: f64,
-    y_speed: f64,
-}
-
-macro_rules! point {
-    ($r:expr, $u:expr, $s:expr $(,)?) => {
-        Point {
-            x: $r.sample($u),
-            y: $r.sample($u),
-            x_speed: $s,
-            y_speed: $s,
-        }
-    };
-}
-
 #[allow(clippy::comparison_chain)]
-fn update(points: &mut [Point]) {
+fn update(
+    xs: &mut [f64],
+    ys: &mut [f64],
+    x_speeds: &mut [f64],
+    y_speeds: &mut [f64],
+) {
     for i in 0..N {
         for j in i..N {
-            if points[i].x < points[j].x {
-                points[i].x_speed += K;
-                points[j].x_speed -= K;
-            } else if points[j].x < points[i].x {
-                points[i].x_speed -= K;
-                points[j].x_speed += K;
+            if xs[i] < xs[j] {
+                x_speeds[i] += K;
+                x_speeds[j] -= K;
+            } else if xs[j] < xs[i] {
+                x_speeds[i] -= K;
+                x_speeds[j] += K;
             }
-            if points[i].y < points[j].y {
-                points[i].y_speed += K;
-                points[j].y_speed -= K;
-            } else if points[j].y < points[i].y {
-                points[i].y_speed -= K;
-                points[j].y_speed += K;
+            if ys[i] < ys[j] {
+                y_speeds[i] += K;
+                y_speeds[j] -= K;
+            } else if ys[j] < ys[i] {
+                y_speeds[i] -= K;
+                y_speeds[j] += K;
             }
         }
     }
-    for point in points.iter_mut() {
-        point.x += point.x_speed;
-        point.y += point.y_speed;
+    for i in 0..N {
+        xs[i] += x_speeds[i];
+        ys[i] += y_speeds[i];
     }
 }
 
-fn render(gl: &mut GlGraphics, args: &RenderArgs, points: &[Point]) {
+fn render(
+    gl: &mut GlGraphics,
+    args: &RenderArgs,
+    xs: &[f64],
+    ys: &[f64],
+    x_speeds: &[f64],
+    y_speeds: &[f64],
+) {
     gl.draw(args.viewport(), |context, gl| {
         let transform: Matrix2d = context
             .transform
             .trans(args.window_size[0] / 2.0, args.window_size[1] / 2.0);
         graphics::clear(DARK_GRAY, gl);
         {
-            let point: &Point = &points[N - 1];
-            let x_speed: f64 = point.x - (point.x_speed * L);
-            let y_speed: f64 = point.y - (point.y_speed * L);
+            let x: f64 = xs[M];
+            let y: f64 = ys[M];
+            let x_speed: f64 = x - (x_speeds[M] * L);
+            let y_speed: f64 = y - (y_speeds[M] * L);
             let (min_x, width): (f64, f64) = {
-                if point.x < x_speed {
-                    (point.x, x_speed - point.x)
+                if x < x_speed {
+                    (x, x_speed - x)
                 } else {
-                    (x_speed, point.x - x_speed)
+                    (x_speed, x - x_speed)
                 }
             };
             let (min_y, height): (f64, f64) = {
-                if point.y < y_speed {
-                    (point.y, y_speed - point.y)
+                if y < y_speed {
+                    (y, y_speed - y)
                 } else {
-                    (y_speed, point.y - y_speed)
+                    (y_speed, y - y_speed)
                 }
             };
             graphics::rectangle(
@@ -119,21 +103,20 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, points: &[Point]) {
             graphics::line(
                 LIGHT_GRAY,
                 LINE_WIDTH,
-                [point.x, point.y, x_speed, y_speed],
+                [x, y, x_speed, y_speed],
                 transform,
                 gl,
             );
         }
-        for point in points.iter().take(N - 1) {
+        for i in 0..M {
+            let x: f64 = xs[i];
+            let y: f64 = ys[i];
+            let x_speed: f64 = x - (x_speeds[i] * L);
+            let y_speed: f64 = y - (y_speeds[i] * L);
             graphics::line(
                 LIGHT_GRAY,
                 LINE_WIDTH,
-                [
-                    point.x,
-                    point.y,
-                    point.x - (point.x_speed * L),
-                    point.y - (point.y_speed * L),
-                ],
+                [x, y, x_speed, y_speed],
                 transform,
                 gl,
             );
@@ -151,23 +134,28 @@ fn main() {
             .unwrap();
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
-    let mut counter: u16 = 0;
+    let mut counter: u16 = RELOAD;
     let mut rng: ThreadRng = rand::thread_rng();
     let range: Uniform<f64> = Uniform::new_inclusive(LOWER_BOUND, UPPER_BOUND);
-    let mut points: [Point; N] =
-        array!(Point, N, || point!(rng, range, START_SPEED));
+    let mut xs: [f64; N] = [0.0; N];
+    let mut ys: [f64; N] = [0.0; N];
+    let mut x_speeds: [f64; N] = [0.0; N];
+    let mut y_speeds: [f64; N] = [0.0; N];
     while let Some(e) = events.next(&mut window) {
         if let Some(args) = e.render_args() {
-            render(&mut gl, &args, &points);
             if RELOAD < counter {
                 counter = 0;
-                for point in &mut points {
-                    *point = point!(rng, range, START_SPEED);
+                for i in 0..N {
+                    xs[i] = rng.sample(range);
+                    ys[i] = rng.sample(range);
+                    x_speeds[i] = START_SPEED;
+                    y_speeds[i] = START_SPEED;
                 }
             } else {
                 counter += 1;
-                update(&mut points)
+                update(&mut xs, &mut ys, &mut x_speeds, &mut y_speeds);
             }
+            render(&mut gl, &args, &xs, &ys, &x_speeds, &y_speeds);
         }
     }
 }
