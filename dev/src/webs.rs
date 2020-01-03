@@ -14,26 +14,26 @@ const WINDOW_HEIGHT: f64 = 600.0;
 const ANTI_ALIAS: u8 = 4;
 
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
-const DARK_GRAY: [f32; 4] = [0.1, 0.1, 0.1, 1.0];
+const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
 const GREEN: [f32; 4] = [0.5, 1.0, 0.87, 1.0];
 const CYAN: [f32; 4] = [0.17, 0.82, 0.76, 0.15];
 
-const LINE_WIDTH: f64 = 0.5;
+const LINE_WIDTH: f64 = 0.75;
 const RADIUS: f64 = 3.5;
 const RADIUS_2: f64 = RADIUS * 2.0;
-const PAD: f64 = 7.5;
+const PAD: f64 = 15.0;
 const PAD_2: f64 = PAD * 2.0;
 
-const UPPER_BOUND: f64 = 500.0;
+const UPPER_BOUND: f64 = 350.0;
 const LOWER_BOUND: f64 = -UPPER_BOUND;
-const CUTOFF: f64 = 750.0;
-const DRAG: f64 = 0.001;
+const CUTOFF: f64 = 350.0;
+const DRAG: f64 = 0.0015;
 
-const INIT: usize = 1;
+const INIT: usize = 2;
 const CAPACITY: usize = 500;
 const THRESHOLD: usize = CAPACITY - 3;
 
-const INTERVAL: u16 = 5;
+const INTERVAL: u16 = 10;
 
 struct Point {
     x: f64,
@@ -215,8 +215,9 @@ fn insert(
              */
             intersections
                 .sort_by(|a, b| a.point.x.partial_cmp(&b.point.x).unwrap());
-            let l_intersection: Intersection = intersections.pop().unwrap();
-            let r_intersection: Intersection = intersections.pop().unwrap();
+            let i: usize = rng.gen_range(0, n - 1);
+            let l_intersection: Intersection = intersections.remove(i);
+            let r_intersection: Intersection = intersections.remove(i);
             let l_edge: &mut Edge = l_intersection.edge;
             let r_edge: &mut Edge = r_intersection.edge;
             nodes.push(Node {
@@ -251,7 +252,7 @@ fn insert(
 }
 
 fn update(nodes: &mut Vec<Node>) {
-    for node in nodes.iter_mut() {
+    for node in nodes[INIT..].iter_mut() {
         let node_point: &mut Point = &mut node.point;
         let node_x: f64 = node_point.x;
         let node_y: f64 = node_point.y;
@@ -285,6 +286,28 @@ fn update(nodes: &mut Vec<Node>) {
     }
 }
 
+fn bounding_box(a: &Point, b: &Point) -> (f64, f64, f64, f64) {
+    let x1: f64 = a.x;
+    let x2: f64 = b.x;
+    let y1: f64 = a.y;
+    let y2: f64 = b.y;
+    let (min_x, width): (f64, f64) = {
+        if x1 < x2 {
+            (x1, x2 - x1)
+        } else {
+            (x2, a.x - x2)
+        }
+    };
+    let (min_y, height): (f64, f64) = {
+        if y1 < y2 {
+            (y1, y2 - y1)
+        } else {
+            (y2, y1 - y2)
+        }
+    };
+    (min_x, min_y, width, height)
+}
+
 fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
     let n: usize = edges.len();
     gl.draw(args.viewport(), |context, gl| {
@@ -297,20 +320,8 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
                 let edge: &Edge = &edges[n - 1];
                 let a: &Point = &(*edge.a).point;
                 let b: &Point = &(*edge.b).point;
-                let (min_x, width): (f64, f64) = {
-                    if a.x < b.x {
-                        (a.x, b.x - a.x)
-                    } else {
-                        (b.x, a.x - b.x)
-                    }
-                };
-                let (min_y, height): (f64, f64) = {
-                    if a.y < b.y {
-                        (a.y, b.y - a.y)
-                    } else {
-                        (b.y, a.y - b.y)
-                    }
-                };
+                let (min_x, min_y, width, height): (f64, f64, f64, f64) =
+                    bounding_box(a, b);
                 graphics::rectangle(
                     CYAN,
                     [min_x - PAD, min_y - PAD, width + PAD_2, height + PAD_2],

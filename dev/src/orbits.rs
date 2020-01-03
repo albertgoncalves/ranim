@@ -14,7 +14,7 @@ const WINDOW_WIDTH: f64 = 400.0;
 const WINDOW_HEIGHT: f64 = 400.0;
 
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
-const DARK_GRAY: [f32; 4] = [0.1, 0.1, 0.1, 1.0];
+const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
 const CYAN: [f32; 4] = [0.17, 0.82, 0.76, 0.35];
 
 const LINE_WIDTH: f64 = 1.15;
