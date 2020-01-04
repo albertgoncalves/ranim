@@ -106,8 +106,8 @@ fn init(
         unsafe {
             (*b).neighbors.push_unchecked(a);
             (*a).neighbors.push_unchecked(b);
+            edges.push_unchecked(Edge { a, b });
         }
-        unsafe { edges.push_unchecked(Edge { a, b }) }
     }
 }
 
