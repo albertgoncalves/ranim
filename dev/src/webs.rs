@@ -19,42 +19,30 @@ const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
 const GREEN: [f32; 4] = [0.5, 1.0, 0.87, 1.0];
 const CYAN: [f32; 4] = [0.17, 0.82, 0.76, 0.15];
 
-const LINE_WIDTH: f64 = 0.7;
+const LINE_WIDTH: f64 = 0.8;
 const RADIUS: f64 = 3.5;
 const RADIUS_2: f64 = RADIUS * 2.0;
-const PAD: f64 = 15.0;
+const PAD: f64 = 17.5;
 const PAD_2: f64 = PAD * 2.0;
 
-const UPPER_BOUND: f64 = 350.0;
+const UPPER_BOUND: f64 = 400.0;
 const LOWER_BOUND: f64 = -UPPER_BOUND;
-const CUTOFF: f64 = 400.0;
-const DRAG: f64 = 0.00175;
+const CUTOFF: f64 = 100.0;
+const DRAG: f64 = 0.0025;
 
-const INIT: usize = 2;
-const CAPACITY: usize = 1024;
+const INIT_EDGES: usize = 1;
+const INIT_NODES: usize = INIT_EDGES * 2;
+const CAPACITY: usize = 512;
 const THRESHOLD: usize = CAPACITY - 3;
-
 const NEIGHBORS: usize = 3;
 const INTERSECTIONS: usize = 16;
 
-const INTERVAL: u16 = 5;
+const INTERVAL: u16 = 10;
 
 #[derive(PartialEq)]
 struct Point {
     x: f64,
     y: f64,
-}
-
-macro_rules! empty_point {
-    () => {
-        Point { x: 0.0, y: 0.0 }
-    };
-}
-
-fn squared_distance(a: &Point, b: &Point) -> f64 {
-    let x: f64 = a.x - b.x;
-    let y: f64 = a.y - b.y;
-    (x * x) + (y * y)
 }
 
 struct Node {
@@ -80,13 +68,19 @@ struct Rect {
     height: f64,
 }
 
+macro_rules! empty_point {
+    () => {
+        Point { x: 0.0, y: 0.0 }
+    };
+}
+
 fn init(
     rng: &mut ThreadRng,
     range: &Uniform<f64>,
     nodes: &mut ArrayVec<[Node; CAPACITY]>,
     edges: &mut ArrayVec<[Edge; CAPACITY]>,
 ) {
-    for _ in 0..INIT {
+    for _ in 0..INIT_EDGES {
         unsafe {
             nodes.push_unchecked(Node {
                 point: Point {
@@ -275,8 +269,14 @@ fn insert(
     }
 }
 
+fn squared_distance(a: &Point, b: &Point) -> f64 {
+    let x: f64 = a.x - b.x;
+    let y: f64 = a.y - b.y;
+    (x * x) + (y * y)
+}
+
 fn update(nodes: &mut ArrayVec<[Node; CAPACITY]>) {
-    for node in nodes[INIT..].iter_mut() {
+    for node in nodes[INIT_NODES..].iter_mut() {
         let node_point: &mut Point = &mut node.point;
         let node_x: f64 = node_point.x;
         let node_y: f64 = node_point.y;
@@ -302,7 +302,7 @@ fn update(nodes: &mut ArrayVec<[Node; CAPACITY]>) {
             next_point.y = node_y;
         }
     }
-    for node in nodes.iter_mut() {
+    for node in nodes[INIT_NODES..].iter_mut() {
         let node_point: &mut Point = &mut node.point;
         let next_point: &Point = &node.next;
         node_point.x = next_point.x;
@@ -412,8 +412,8 @@ fn main() {
     let mut edges: ArrayVec<[Edge; CAPACITY]> = ArrayVec::new();
     let mut counter: u16 = 0;
     init(&mut rng, &range, &mut nodes, &mut edges);
-    while let Some(e) = events.next(&mut window) {
-        if let Some(args) = e.render_args() {
+    while let Some(event) = events.next(&mut window) {
+        if let Some(args) = event.render_args() {
             if (THRESHOLD < nodes.len()) || (THRESHOLD < edges.len()) {
                 nodes.clear();
                 edges.clear();

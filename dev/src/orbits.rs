@@ -141,8 +141,8 @@ fn main() {
     let mut ys: [f64; N] = [0.0; N];
     let mut x_speeds: [f64; N] = [0.0; N];
     let mut y_speeds: [f64; N] = [0.0; N];
-    while let Some(e) = events.next(&mut window) {
-        if let Some(args) = e.render_args() {
+    while let Some(event) = events.next(&mut window) {
+        if let Some(args) = event.render_args() {
             if RELOAD < counter {
                 counter = 0;
                 for i in 0..N {
