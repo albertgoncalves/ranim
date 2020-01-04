@@ -1,5 +1,4 @@
-mod point;
-
+use arrayvec::ArrayVec;
 use glutin_window::GlutinWindow;
 use graphics::math::Matrix2d;
 use graphics::Transformed;
@@ -7,13 +6,12 @@ use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent};
 use piston::window::WindowSettings;
-use point::Point;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
 
-const WINDOW_WIDTH: f64 = 600.0;
-const WINDOW_HEIGHT: f64 = 600.0;
+const WINDOW_WIDTH: f64 = 500.0;
+const WINDOW_HEIGHT: f64 = 500.0;
 const ANTI_ALIAS: u8 = 4;
 
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
@@ -33,10 +31,29 @@ const CUTOFF: f64 = 400.0;
 const DRAG: f64 = 0.00175;
 
 const INIT: usize = 2;
-const CAPACITY: usize = 1000;
+const CAPACITY: usize = 1024;
 const THRESHOLD: usize = CAPACITY - 3;
 
 const INTERVAL: u16 = 5;
+
+#[derive(PartialEq)]
+struct Point {
+    x: f64,
+    y: f64,
+}
+
+#[macro_export]
+macro_rules! empty_point {
+    () => {
+        Point { x: 0.0, y: 0.0 }
+    };
+}
+
+fn squared_distance(a: &Point, b: &Point) -> f64 {
+    let x: f64 = a.x - b.x;
+    let y: f64 = a.y - b.y;
+    (x * x) + (y * y)
+}
 
 struct Node {
     point: Point,
@@ -49,11 +66,6 @@ struct Edge {
     b: *mut Node,
 }
 
-struct Candidate {
-    a: Point,
-    b: Point,
-}
-
 struct Intersection<'a> {
     point: Point,
     edge: &'a mut Edge,
@@ -62,32 +74,36 @@ struct Intersection<'a> {
 fn init(
     rng: &mut ThreadRng,
     range: &Uniform<f64>,
-    nodes: &mut Vec<Node>,
-    edges: &mut Vec<Edge>,
+    nodes: &mut ArrayVec<[Node; CAPACITY]>,
+    edges: &mut ArrayVec<[Edge; CAPACITY]>,
 ) {
     for _ in 0..INIT {
-        nodes.push(Node {
-            point: Point {
-                x: rng.sample(range),
-                y: rng.sample(range),
-            },
-            neighbors: Vec::with_capacity(1),
-            next: empty_point!(),
-        });
+        unsafe {
+            nodes.push_unchecked(Node {
+                point: Point {
+                    x: rng.sample(range),
+                    y: rng.sample(range),
+                },
+                neighbors: Vec::with_capacity(1),
+                next: empty_point!(),
+            });
+        }
         let a: *mut Node = nodes.last_mut().unwrap();
-        nodes.push(Node {
-            point: Point {
-                x: rng.sample(range),
-                y: rng.sample(range),
-            },
-            neighbors: vec![a],
-            next: empty_point!(),
-        });
+        unsafe {
+            nodes.push_unchecked(Node {
+                point: Point {
+                    x: rng.sample(range),
+                    y: rng.sample(range),
+                },
+                neighbors: vec![a],
+                next: empty_point!(),
+            });
+        }
         let b: *mut Node = nodes.last_mut().unwrap();
         unsafe {
             (*a).neighbors.push(b);
         }
-        edges.push(Edge { a, b })
+        unsafe { edges.push_unchecked(Edge { a, b }) }
     }
 }
 
@@ -102,30 +118,60 @@ macro_rules! replace_neighbor {
     };
 }
 
+#[allow(clippy::many_single_char_names)]
+fn intersection(a: &Point, b: &Point, c: &Point, d: &Point) -> Option<Point> {
+    /* NOTE:     `a`
+     *            |
+     *       `c`--+--`d`
+     *            |
+     *           `b`
+     */
+    let x1: f64 = a.x;
+    let x2: f64 = b.x;
+    let x3: f64 = c.x;
+    let x4: f64 = d.x;
+    let y1: f64 = a.y;
+    let y2: f64 = b.y;
+    let y3: f64 = c.y;
+    let y4: f64 = d.y;
+    let denominator: f64 = ((x1 - x2) * (y3 - y4)) - ((y1 - y2) * (x3 - x4));
+    if denominator != 0.0 {
+        let t: f64 =
+            (((x1 - x3) * (y3 - y4)) - ((y1 - y3) * (x3 - x4))) / denominator;
+        let u: f64 =
+            -(((x1 - x2) * (y1 - y3)) - ((y1 - y2) * (x1 - x3))) / denominator;
+        if (0.0 <= t) && (t <= 1.0) && (0.0 <= u) && (u <= 1.0) {
+            return Some(Point {
+                x: x1 + (t * (x2 - x1)),
+                y: y1 + (t * (y2 - y1)),
+            });
+        }
+    }
+    None
+}
+
 #[allow(clippy::comparison_chain)]
 fn insert(
     rng: &mut ThreadRng,
     range: &Uniform<f64>,
-    nodes: &mut Vec<Node>,
-    edges: &mut Vec<Edge>,
+    nodes: &mut ArrayVec<[Node; CAPACITY]>,
+    edges: &mut ArrayVec<[Edge; CAPACITY]>,
 ) {
     loop {
-        let candidate: Candidate = Candidate {
-            a: Point {
-                x: rng.sample(range),
-                y: rng.sample(range),
-            },
-            b: Point {
-                x: rng.sample(range),
-                y: rng.sample(range),
-            },
+        let candidate_a: Point = Point {
+            x: rng.sample(range),
+            y: rng.sample(range),
+        };
+        let candidate_b: Point = Point {
+            x: rng.sample(range),
+            y: rng.sample(range),
         };
         let mut intersections: Vec<Intersection> = Vec::new();
         unsafe {
             for edge in edges.iter_mut() {
-                if let Some(point) = point::intersection(
-                    &candidate.a,
-                    &candidate.b,
+                if let Some(point) = intersection(
+                    &candidate_a,
+                    &candidate_b,
                     &(*edge.a).point,
                     &(*edge.b).point,
                 ) {
@@ -141,17 +187,21 @@ fn insert(
              */
             let intersection: Intersection = intersections.pop().unwrap();
             let edge: &mut Edge = intersection.edge;
-            nodes.push(Node {
-                point: intersection.point,
-                neighbors: vec![edge.a, edge.b],
-                next: empty_point!(),
-            });
+            unsafe {
+                nodes.push_unchecked(Node {
+                    point: intersection.point,
+                    neighbors: vec![edge.a, edge.b],
+                    next: empty_point!(),
+                });
+            }
             let p: *mut Node = nodes.last_mut().unwrap();
-            nodes.push(Node {
-                point: candidate.a,
-                neighbors: vec![p],
-                next: empty_point!(),
-            });
+            unsafe {
+                nodes.push_unchecked(Node {
+                    point: candidate_a,
+                    neighbors: vec![p],
+                    next: empty_point!(),
+                });
+            }
             let q: *mut Node = nodes.last_mut().unwrap();
             unsafe {
                 replace_neighbor!(*(edge.a), edge.b, p);
@@ -160,8 +210,10 @@ fn insert(
             }
             let b: *mut Node = edge.b;
             edge.b = p;
-            edges.push(Edge { a: p, b });
-            edges.push(Edge { a: p, b: q });
+            unsafe {
+                edges.push_unchecked(Edge { a: p, b });
+                edges.push_unchecked(Edge { a: p, b: q });
+            }
             return;
         } else if 1 < n {
             /* NOTE: `l.a`---`l.b`    `l.a`--`p`--`l.b`
@@ -175,17 +227,21 @@ fn insert(
             let r_intersection: Intersection = intersections.remove(i);
             let l_edge: &mut Edge = l_intersection.edge;
             let r_edge: &mut Edge = r_intersection.edge;
-            nodes.push(Node {
-                point: l_intersection.point,
-                neighbors: vec![l_edge.a, l_edge.b],
-                next: empty_point!(),
-            });
+            unsafe {
+                nodes.push_unchecked(Node {
+                    point: l_intersection.point,
+                    neighbors: vec![l_edge.a, l_edge.b],
+                    next: empty_point!(),
+                });
+            }
             let p: *mut Node = nodes.last_mut().unwrap();
-            nodes.push(Node {
-                point: r_intersection.point,
-                neighbors: vec![r_edge.a, r_edge.b, p],
-                next: empty_point!(),
-            });
+            unsafe {
+                nodes.push_unchecked(Node {
+                    point: r_intersection.point,
+                    neighbors: vec![r_edge.a, r_edge.b, p],
+                    next: empty_point!(),
+                });
+            }
             let q: *mut Node = nodes.last_mut().unwrap();
             unsafe {
                 replace_neighbor!(*(l_edge.a), l_edge.b, p);
@@ -198,15 +254,17 @@ fn insert(
             let r_b: *mut Node = r_edge.b;
             l_edge.b = p;
             r_edge.b = q;
-            edges.push(Edge { a: p, b: l_b });
-            edges.push(Edge { a: q, b: r_b });
-            edges.push(Edge { a: p, b: q });
+            unsafe {
+                edges.push_unchecked(Edge { a: p, b: l_b });
+                edges.push_unchecked(Edge { a: q, b: r_b });
+                edges.push_unchecked(Edge { a: p, b: q });
+            }
             return;
         }
     }
 }
 
-fn update(nodes: &mut Vec<Node>) {
+fn update(nodes: &mut ArrayVec<[Node; CAPACITY]>) {
     for node in nodes[INIT..].iter_mut() {
         let node_point: &mut Point = &mut node.point;
         let node_x: f64 = node_point.x;
@@ -217,8 +275,7 @@ fn update(nodes: &mut Vec<Node>) {
         unsafe {
             for neighbor in &node.neighbors {
                 let neighbor_point: &Point = &(*(*neighbor)).point;
-                if CUTOFF < point::squared_distance(node_point, neighbor_point)
-                {
+                if CUTOFF < squared_distance(node_point, neighbor_point) {
                     n += 1.0;
                     x += node_x - neighbor_point.x;
                     y += node_y - neighbor_point.y;
@@ -331,8 +388,8 @@ fn main() {
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();
     let range: Uniform<f64> = Uniform::new_inclusive(LOWER_BOUND, UPPER_BOUND);
-    let mut nodes: Vec<Node> = Vec::with_capacity(CAPACITY);
-    let mut edges: Vec<Edge> = Vec::with_capacity(CAPACITY);
+    let mut nodes: ArrayVec<[Node; CAPACITY]> = ArrayVec::new();
+    let mut edges: ArrayVec<[Edge; CAPACITY]> = ArrayVec::new();
     let mut counter: u16 = 0;
     init(&mut rng, &range, &mut nodes, &mut edges);
     while let Some(e) = events.next(&mut window) {
