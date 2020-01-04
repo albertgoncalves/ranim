@@ -154,7 +154,11 @@ fn intersection(a: &Point, b: &Point, c: &Point, d: &Point) -> Option<Point> {
     None
 }
 
-#[allow(clippy::comparison_chain)]
+#[allow(
+    clippy::comparison_chain,
+    clippy::many_single_char_names,
+    clippy::too_many_lines
+)]
 fn insert(
     rng: &mut ThreadRng,
     range: &Uniform<f64>,
@@ -192,6 +196,8 @@ fn insert(
              */
             let intersection: Intersection = intersections.pop().unwrap();
             let edge: &mut Edge = intersection.edge;
+            let a: *mut Node = edge.a;
+            let b: *mut Node = edge.b;
             unsafe {
                 nodes.push_unchecked(Node {
                     point: candidate_a,
@@ -203,18 +209,17 @@ fn insert(
             unsafe {
                 nodes.push_unchecked(Node {
                     point: intersection.point,
-                    neighbors: ArrayVec::from([edge.a, edge.b, q]),
+                    neighbors: ArrayVec::from([a, b, q]),
                     next: empty_point!(),
                 });
             }
             let p: *mut Node = nodes.last_mut().unwrap();
             unsafe {
-                replace_neighbor!(*edge.a, edge.b, p);
-                replace_neighbor!(*edge.b, edge.a, p);
+                replace_neighbor!(*a, b, p);
+                replace_neighbor!(*b, a, p);
                 (*q).neighbors.push_unchecked(p);
             }
-            let b: *mut Node = edge.b;
-            edge.b = p;
+            (*edge).b = p;
             unsafe {
                 edges.push_unchecked(Edge { a: p, b });
                 edges.push_unchecked(Edge { a: p, b: q });
@@ -232,6 +237,10 @@ fn insert(
             let r_intersection: Intersection = intersections.remove(i);
             let l_edge: &mut Edge = l_intersection.edge;
             let r_edge: &mut Edge = r_intersection.edge;
+            let l_a: *mut Node = (*l_edge).a;
+            let l_b: *mut Node = (*l_edge).b;
+            let r_a: *mut Node = (*r_edge).a;
+            let r_b: *mut Node = (*r_edge).b;
             unsafe {
                 nodes.push_unchecked(Node {
                     point: r_intersection.point,
@@ -243,24 +252,22 @@ fn insert(
             unsafe {
                 nodes.push_unchecked(Node {
                     point: l_intersection.point,
-                    neighbors: ArrayVec::from([l_edge.a, l_edge.b, q]),
+                    neighbors: ArrayVec::from([l_a, l_b, q]),
                     next: empty_point!(),
                 });
             }
             let p: *mut Node = nodes.last_mut().unwrap();
             unsafe {
-                replace_neighbor!(*l_edge.a, l_edge.b, p);
-                replace_neighbor!(*l_edge.b, l_edge.a, p);
-                replace_neighbor!(*r_edge.a, r_edge.b, q);
-                replace_neighbor!(*r_edge.b, r_edge.a, q);
-                (*q).neighbors.push_unchecked(r_edge.a);
-                (*q).neighbors.push_unchecked(r_edge.b);
+                replace_neighbor!(*l_a, l_b, p);
+                replace_neighbor!(*l_b, l_a, p);
+                replace_neighbor!(*r_a, r_b, q);
+                replace_neighbor!(*r_b, r_a, q);
+                (*q).neighbors.push_unchecked(r_a);
+                (*q).neighbors.push_unchecked(r_b);
                 (*q).neighbors.push_unchecked(p);
             }
-            let l_b: *mut Node = l_edge.b;
-            let r_b: *mut Node = r_edge.b;
-            l_edge.b = p;
-            r_edge.b = q;
+            (*l_edge).b = p;
+            (*r_edge).b = q;
             unsafe {
                 edges.push_unchecked(Edge { a: p, b: l_b });
                 edges.push_unchecked(Edge { a: q, b: r_b });
@@ -321,7 +328,7 @@ fn bounds(a: &Point, b: &Point) -> Rect {
         if x1 < x2 {
             (x1, x2 - x1)
         } else {
-            (x2, a.x - x2)
+            (x2, x1 - x2)
         }
     };
     let (y, height): (f64, f64) = {
