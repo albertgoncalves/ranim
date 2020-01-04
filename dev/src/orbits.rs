@@ -17,19 +17,19 @@ const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
 const CYAN: [f32; 4] = [0.17, 0.82, 0.76, 0.35];
 
 const LINE_WIDTH: f64 = 1.15;
-const PAD: f64 = 10.0;
-const PAD_2: f64 = PAD * 2.0;
+const RECT_PAD: f64 = 10.0;
+const RECT_PAD_2: f64 = RECT_PAD * 2.0;
 
-const UPPER_BOUND: f64 = 300.0;
-const LOWER_BOUND: f64 = -UPPER_BOUND;
-const START_SPEED: f64 = 0.0;
+const POINT_RNG_UPPER: f64 = 450.0;
+const POINT_RNG_LOWER: f64 = -POINT_RNG_UPPER;
+const POINT_SPEED_INIT: f64 = 0.0;
 
-const N: usize = 20;
-const M: usize = N - 1;
-const K: f64 = 0.015;
-const L: f64 = 7.5;
+const CAPACITY: usize = 20;
+const CAPACITY_MINUS_1: usize = CAPACITY - 1;
+const SPEED_INCREMENT: f64 = 0.015;
+const RENDER_SCALE: f64 = 7.5;
 
-const RELOAD: u16 = 60 * 8;
+const RELOAD_FRAME_INTERVAL: u16 = 60 * 8;
 
 #[allow(clippy::comparison_chain)]
 fn update(
@@ -38,25 +38,25 @@ fn update(
     x_speeds: &mut [f64],
     y_speeds: &mut [f64],
 ) {
-    for i in 0..N {
-        for j in i..N {
+    for i in 0..CAPACITY {
+        for j in i..CAPACITY {
             if xs[i] < xs[j] {
-                x_speeds[i] += K;
-                x_speeds[j] -= K;
+                x_speeds[i] += SPEED_INCREMENT;
+                x_speeds[j] -= SPEED_INCREMENT;
             } else if xs[j] < xs[i] {
-                x_speeds[i] -= K;
-                x_speeds[j] += K;
+                x_speeds[i] -= SPEED_INCREMENT;
+                x_speeds[j] += SPEED_INCREMENT;
             }
             if ys[i] < ys[j] {
-                y_speeds[i] += K;
-                y_speeds[j] -= K;
+                y_speeds[i] += SPEED_INCREMENT;
+                y_speeds[j] -= SPEED_INCREMENT;
             } else if ys[j] < ys[i] {
-                y_speeds[i] -= K;
-                y_speeds[j] += K;
+                y_speeds[i] -= SPEED_INCREMENT;
+                y_speeds[j] += SPEED_INCREMENT;
             }
         }
     }
-    for i in 0..N {
+    for i in 0..CAPACITY {
         xs[i] += x_speeds[i];
         ys[i] += y_speeds[i];
     }
@@ -76,10 +76,10 @@ fn render(
             .trans(args.window_size[0] / 2.0, args.window_size[1] / 2.0);
         graphics::clear(DARK_GRAY, gl);
         {
-            let x: f64 = xs[M];
-            let y: f64 = ys[M];
-            let x_speed: f64 = x - (x_speeds[M] * L);
-            let y_speed: f64 = y - (y_speeds[M] * L);
+            let x: f64 = xs[CAPACITY_MINUS_1];
+            let y: f64 = ys[CAPACITY_MINUS_1];
+            let x_speed: f64 = x - (x_speeds[CAPACITY_MINUS_1] * RENDER_SCALE);
+            let y_speed: f64 = y - (y_speeds[CAPACITY_MINUS_1] * RENDER_SCALE);
             let (min_x, width): (f64, f64) = {
                 if x < x_speed {
                     (x, x_speed - x)
@@ -96,7 +96,12 @@ fn render(
             };
             graphics::rectangle(
                 CYAN,
-                [min_x - PAD, min_y - PAD, width + PAD_2, height + PAD_2],
+                [
+                    min_x - RECT_PAD,
+                    min_y - RECT_PAD,
+                    width + RECT_PAD_2,
+                    height + RECT_PAD_2,
+                ],
                 transform,
                 gl,
             );
@@ -108,11 +113,11 @@ fn render(
                 gl,
             );
         }
-        for i in 0..M {
+        for i in 0..CAPACITY_MINUS_1 {
             let x: f64 = xs[i];
             let y: f64 = ys[i];
-            let x_speed: f64 = x - (x_speeds[i] * L);
-            let y_speed: f64 = y - (y_speeds[i] * L);
+            let x_speed: f64 = x - (x_speeds[i] * RENDER_SCALE);
+            let y_speed: f64 = y - (y_speeds[i] * RENDER_SCALE);
             graphics::line(
                 LIGHT_GRAY,
                 LINE_WIDTH,
@@ -134,22 +139,23 @@ fn main() {
             .unwrap();
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
-    let mut counter: u16 = RELOAD;
+    let mut counter: u16 = RELOAD_FRAME_INTERVAL + 1;
     let mut rng: ThreadRng = rand::thread_rng();
-    let range: Uniform<f64> = Uniform::new_inclusive(LOWER_BOUND, UPPER_BOUND);
-    let mut xs: [f64; N] = [0.0; N];
-    let mut ys: [f64; N] = [0.0; N];
-    let mut x_speeds: [f64; N] = [0.0; N];
-    let mut y_speeds: [f64; N] = [0.0; N];
+    let range: Uniform<f64> =
+        Uniform::new_inclusive(POINT_RNG_LOWER, POINT_RNG_UPPER);
+    let mut xs: [f64; CAPACITY] = [0.0; CAPACITY];
+    let mut ys: [f64; CAPACITY] = [0.0; CAPACITY];
+    let mut x_speeds: [f64; CAPACITY] = [0.0; CAPACITY];
+    let mut y_speeds: [f64; CAPACITY] = [0.0; CAPACITY];
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
-            if RELOAD < counter {
+            if RELOAD_FRAME_INTERVAL < counter {
                 counter = 0;
-                for i in 0..N {
+                for i in 0..CAPACITY {
                     xs[i] = rng.sample(range);
                     ys[i] = rng.sample(range);
-                    x_speeds[i] = START_SPEED;
-                    y_speeds[i] = START_SPEED;
+                    x_speeds[i] = POINT_SPEED_INIT;
+                    y_speeds[i] = POINT_SPEED_INIT;
                 }
             } else {
                 counter += 1;

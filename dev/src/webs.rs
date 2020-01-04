@@ -22,13 +22,13 @@ const CYAN: [f32; 4] = [0.17, 0.82, 0.76, 0.15];
 const LINE_WIDTH: f64 = 0.8;
 const RADIUS: f64 = 3.5;
 const RADIUS_2: f64 = RADIUS * 2.0;
-const PAD: f64 = 17.5;
-const PAD_2: f64 = PAD * 2.0;
+const RECT_PAD: f64 = 17.5;
+const RECT_PAD_2: f64 = RECT_PAD * 2.0;
 
-const UPPER_BOUND: f64 = 400.0;
-const LOWER_BOUND: f64 = -UPPER_BOUND;
-const CUTOFF: f64 = 100.0;
-const DRAG: f64 = 0.0025;
+const POINT_RNG_UPPER: f64 = 400.0;
+const POINT_RNG_LOWER: f64 = -POINT_RNG_UPPER;
+const POINT_DRAG: f64 = 0.0025;
+const NEIGHBOR_DISTANCE_SQUARED: f64 = 100.0;
 
 const EDGES_CAP: usize = 512;
 const EDGES_LIMIT: usize = EDGES_CAP - 3;
@@ -39,7 +39,7 @@ const NODES_INIT: usize = EDGES_INIT * 2;
 const NEIGHBORS_CAP: usize = 3;
 const INTERSECTIONS_CAP: usize = 16;
 
-const INTERVAL: u16 = 10;
+const INSERT_FRAME_INTERVAL: u16 = 10;
 
 #[derive(PartialEq)]
 struct Point {
@@ -297,7 +297,9 @@ fn update(nodes: &mut ArrayVec<[Node; NODES_CAP]>) {
         unsafe {
             for neighbor in &node.neighbors {
                 let neighbor_point: &Point = &(**neighbor).point;
-                if CUTOFF < squared_distance(node_point, neighbor_point) {
+                if NEIGHBOR_DISTANCE_SQUARED
+                    < squared_distance(node_point, neighbor_point)
+                {
                     n += 1.0;
                     x += node_x - neighbor_point.x;
                     y += node_y - neighbor_point.y;
@@ -306,8 +308,8 @@ fn update(nodes: &mut ArrayVec<[Node; NODES_CAP]>) {
         }
         let next_point: &mut Point = &mut node.next;
         if 0.0 < n {
-            next_point.x = node_x - ((x / n) * DRAG);
-            next_point.y = node_y - ((y / n) * DRAG);
+            next_point.x = node_x - ((x / n) * POINT_DRAG);
+            next_point.y = node_y - ((y / n) * POINT_DRAG);
         } else {
             next_point.x = node_x;
             next_point.y = node_y;
@@ -364,10 +366,10 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
                 graphics::rectangle(
                     CYAN,
                     [
-                        rect.x - PAD,
-                        rect.y - PAD,
-                        rect.width + PAD_2,
-                        rect.height + PAD_2,
+                        rect.x - RECT_PAD,
+                        rect.y - RECT_PAD,
+                        rect.width + RECT_PAD_2,
+                        rect.height + RECT_PAD_2,
                     ],
                     transform,
                     gl,
@@ -418,7 +420,8 @@ fn main() {
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();
-    let range: Uniform<f64> = Uniform::new_inclusive(LOWER_BOUND, UPPER_BOUND);
+    let range: Uniform<f64> =
+        Uniform::new_inclusive(POINT_RNG_LOWER, POINT_RNG_UPPER);
     let mut nodes: ArrayVec<[Node; NODES_CAP]> = ArrayVec::new();
     let mut edges: ArrayVec<[Edge; EDGES_CAP]> = ArrayVec::new();
     let mut counter: u16 = 0;
@@ -429,7 +432,7 @@ fn main() {
                 nodes.clear();
                 edges.clear();
                 init(&mut rng, &range, &mut nodes, &mut edges);
-            } else if INTERVAL < counter {
+            } else if INSERT_FRAME_INTERVAL < counter {
                 insert(&mut rng, &range, &mut nodes, &mut edges);
                 counter = 0;
             }
