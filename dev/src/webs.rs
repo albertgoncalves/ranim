@@ -253,6 +253,8 @@ fn insert(
                 replace_neighbor!(*l_edge.b, l_edge.a, p);
                 replace_neighbor!(*r_edge.a, r_edge.b, q);
                 replace_neighbor!(*r_edge.b, r_edge.a, q);
+                (*q).neighbors.push_unchecked(r_edge.a);
+                (*q).neighbors.push_unchecked(r_edge.b);
                 (*q).neighbors.push_unchecked(p);
             }
             let l_b: *mut Node = l_edge.b;
