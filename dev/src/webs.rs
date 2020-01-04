@@ -30,12 +30,14 @@ const LOWER_BOUND: f64 = -UPPER_BOUND;
 const CUTOFF: f64 = 100.0;
 const DRAG: f64 = 0.0025;
 
-const INIT_EDGES: usize = 1;
-const INIT_NODES: usize = INIT_EDGES * 2;
-const CAPACITY: usize = 512;
-const THRESHOLD: usize = CAPACITY - 3;
-const NEIGHBORS: usize = 3;
-const INTERSECTIONS: usize = 16;
+const EDGES_CAP: usize = 512;
+const EDGES_LIMIT: usize = EDGES_CAP - 3;
+const EDGES_INIT: usize = 1;
+const NODES_CAP: usize = 512;
+const NODES_LIMIT: usize = NODES_CAP - 2;
+const NODES_INIT: usize = EDGES_INIT * 2;
+const NEIGHBORS_CAP: usize = 3;
+const INTERSECTIONS_CAP: usize = 16;
 
 const INTERVAL: u16 = 10;
 
@@ -48,7 +50,7 @@ struct Point {
 struct Node {
     point: Point,
     next: Point,
-    neighbors: ArrayVec<[*mut Node; NEIGHBORS]>,
+    neighbors: ArrayVec<[*mut Node; NEIGHBORS_CAP]>,
 }
 
 struct Edge {
@@ -77,10 +79,10 @@ macro_rules! empty_point {
 fn init(
     rng: &mut ThreadRng,
     range: &Uniform<f64>,
-    nodes: &mut ArrayVec<[Node; CAPACITY]>,
-    edges: &mut ArrayVec<[Edge; CAPACITY]>,
+    nodes: &mut ArrayVec<[Node; NODES_CAP]>,
+    edges: &mut ArrayVec<[Edge; EDGES_CAP]>,
 ) {
-    for _ in 0..INIT_EDGES {
+    for _ in 0..EDGES_INIT {
         unsafe {
             nodes.push_unchecked(Node {
                 point: Point {
@@ -162,8 +164,8 @@ fn intersection(a: &Point, b: &Point, c: &Point, d: &Point) -> Option<Point> {
 fn insert(
     rng: &mut ThreadRng,
     range: &Uniform<f64>,
-    nodes: &mut ArrayVec<[Node; CAPACITY]>,
-    edges: &mut ArrayVec<[Edge; CAPACITY]>,
+    nodes: &mut ArrayVec<[Node; NODES_CAP]>,
+    edges: &mut ArrayVec<[Edge; EDGES_CAP]>,
 ) {
     loop {
         let candidate_a: Point = Point {
@@ -175,7 +177,7 @@ fn insert(
             y: rng.sample(range),
         };
         let mut intersections: Vec<Intersection> =
-            Vec::with_capacity(INTERSECTIONS);
+            Vec::with_capacity(INTERSECTIONS_CAP);
         unsafe {
             for edge in edges.iter_mut() {
                 if let Some(point) = intersection(
@@ -284,8 +286,8 @@ fn squared_distance(a: &Point, b: &Point) -> f64 {
     (x * x) + (y * y)
 }
 
-fn update(nodes: &mut ArrayVec<[Node; CAPACITY]>) {
-    for node in nodes[INIT_NODES..].iter_mut() {
+fn update(nodes: &mut ArrayVec<[Node; NODES_CAP]>) {
+    for node in nodes[NODES_INIT..].iter_mut() {
         let node_point: &mut Point = &mut node.point;
         let node_x: f64 = node_point.x;
         let node_y: f64 = node_point.y;
@@ -311,7 +313,7 @@ fn update(nodes: &mut ArrayVec<[Node; CAPACITY]>) {
             next_point.y = node_y;
         }
     }
-    for node in nodes[INIT_NODES..].iter_mut() {
+    for node in nodes[NODES_INIT..].iter_mut() {
         let node_point: &mut Point = &mut node.point;
         let next_point: &Point = &node.next;
         node_point.x = next_point.x;
@@ -417,13 +419,13 @@ fn main() {
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();
     let range: Uniform<f64> = Uniform::new_inclusive(LOWER_BOUND, UPPER_BOUND);
-    let mut nodes: ArrayVec<[Node; CAPACITY]> = ArrayVec::new();
-    let mut edges: ArrayVec<[Edge; CAPACITY]> = ArrayVec::new();
+    let mut nodes: ArrayVec<[Node; NODES_CAP]> = ArrayVec::new();
+    let mut edges: ArrayVec<[Edge; EDGES_CAP]> = ArrayVec::new();
     let mut counter: u16 = 0;
     init(&mut rng, &range, &mut nodes, &mut edges);
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
-            if (THRESHOLD < nodes.len()) || (THRESHOLD < edges.len()) {
+            if (NODES_LIMIT < nodes.len()) || (EDGES_LIMIT < edges.len()) {
                 nodes.clear();
                 edges.clear();
                 init(&mut rng, &range, &mut nodes, &mut edges);
