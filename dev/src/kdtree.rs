@@ -64,12 +64,14 @@ const BOUNDS_RECT: Rect = Rect {
     height: BOUNDS.upper.y - BOUNDS.lower.y,
 };
 
+type TreeIndex = usize;
+
 struct Tree {
     point: Point,
     bounds: Bounds,
     horizontal: bool,
-    left: Option<Box<Tree>>,
-    right: Option<Box<Tree>>,
+    left: Option<TreeIndex>,
+    right: Option<TreeIndex>,
 }
 
 macro_rules! bounds {
@@ -88,10 +90,11 @@ macro_rules! bounds {
 }
 
 fn construct(
+    tree_stack: &mut ArrayVec<[Tree; CAPACITY]>,
     points: &mut [Point],
     horizontal: bool,
     bounds: Bounds,
-) -> Option<Box<Tree>> {
+) -> Option<TreeIndex> {
     let n: usize = points.len();
     if n == 0 {
         return None;
@@ -132,20 +135,32 @@ fn construct(
             (point, left_bounds, right_bounds)
         }
     };
-    Some(Box::new(Tree {
+    let left: Option<TreeIndex> =
+        construct(tree_stack, &mut points[..median], !horizontal, left_bounds);
+    let right: Option<TreeIndex> = construct(
+        tree_stack,
+        &mut points[(median + 1)..],
+        !horizontal,
+        right_bounds,
+    );
+    let tree_index: TreeIndex = tree_stack.len();
+    tree_stack.push(Tree {
         point,
         bounds,
         horizontal,
-        left: construct(&mut points[..median], !horizontal, left_bounds),
-        right: construct(
-            &mut points[(median + 1)..],
-            !horizontal,
-            right_bounds,
-        ),
-    }))
+        left,
+        right,
+    });
+    Some(tree_index)
 }
 
-fn draw_tree(gl: &mut GlGraphics, transform: Matrix2d, tree: &Tree) {
+fn draw_tree(
+    gl: &mut GlGraphics,
+    transform: Matrix2d,
+    tree_stack: &ArrayVec<[Tree; CAPACITY]>,
+    tree_index: TreeIndex,
+) {
+    let tree: &Tree = &tree_stack[tree_index];
     let line: [f64; 4] = if tree.horizontal {
         [
             tree.point.x,
@@ -173,15 +188,20 @@ fn draw_tree(gl: &mut GlGraphics, transform: Matrix2d, tree: &Tree) {
         gl,
     );
     graphics::line(LIGHT_GRAY, LINE_WIDTH, line, transform, gl);
-    if let Some(left) = &tree.left {
-        draw_tree(gl, transform, &left);
+    if let Some(left) = tree.left {
+        draw_tree(gl, transform, tree_stack, left);
     }
-    if let Some(right) = &tree.right {
-        draw_tree(gl, transform, &right);
+    if let Some(right) = tree.right {
+        draw_tree(gl, transform, tree_stack, right);
     }
 }
 
-fn render(gl: &mut GlGraphics, args: &RenderArgs, tree: &Tree) {
+fn render(
+    gl: &mut GlGraphics,
+    args: &RenderArgs,
+    tree_stack: &ArrayVec<[Tree; CAPACITY]>,
+    tree_index: TreeIndex,
+) {
     gl.draw(args.viewport(), |context, gl| {
         let transform: Matrix2d = context
             .transform
@@ -198,7 +218,7 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, tree: &Tree) {
             transform,
             gl,
         );
-        draw_tree(gl, transform, tree);
+        draw_tree(gl, transform, tree_stack, tree_index);
     })
 }
 
@@ -229,14 +249,18 @@ fn main() {
     for _ in 0..CAPACITY {
         points.push(point!());
     }
+    let mut tree_stack: ArrayVec<[Tree; CAPACITY]> = ArrayVec::new();
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
-            if let Some(tree) = construct(&mut points, true, BOUNDS) {
+            if let Some(tree_index) =
+                construct(&mut tree_stack, &mut points, true, BOUNDS)
+            {
+                render(&mut gl, &args, &tree_stack, tree_index);
+                tree_stack.clear();
                 for point in &mut points {
                     point.x += rng.sample(range_walk);
                     point.y += rng.sample(range_walk);
                 }
-                render(&mut gl, &args, &tree);
             }
         }
     }
