@@ -16,17 +16,26 @@ const ANTI_ALIAS: u8 = 4;
 
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
 const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
+const RED: [f32; 4] = [0.92, 0.47, 0.47, 0.75];
+const CYAN: [f32; 4] = [0.17, 0.82, 0.76, 0.15];
 
 const LINE_WIDTH: f64 = 1.15;
 const RADIUS: f64 = 6.0;
 const RADIUS_2: f64 = RADIUS * 2.0;
+const RADIUS_4: f64 = RADIUS * 4.0;
 
 const POINT_RNG_UPPER: f64 = 400.0;
 const POINT_RNG_LOWER: f64 = -POINT_RNG_UPPER;
 const WALK_RNG_UPPER: f64 = 0.35;
 const WALK_RNG_LOWER: f64 = -WALK_RNG_UPPER;
 
-const CAPACITY: usize = 50;
+const SEARCH_RADIUS: f64 = 150.0;
+const SEARCH_RADIUS_2: f64 = SEARCH_RADIUS * 2.0;
+const SEARCH_RADIUS_SQUARED: f64 = SEARCH_RADIUS * SEARCH_RADIUS;
+
+const CAPACITY: usize = 100;
+
+const RELOAD_FRAME_INTERVAL: u16 = 60 * 8;
 
 #[derive(Clone, PartialEq)]
 struct Point {
@@ -150,6 +159,38 @@ fn construct_tree(
     Some(tree_index)
 }
 
+fn squared_distance(a: &Point, b: &Point) -> f64 {
+    let x: f64 = a.x - b.x;
+    let y: f64 = a.y - b.y;
+    (x * x) + (y * y)
+}
+
+unsafe fn search_tree(
+    point: &Point,
+    neighbors: *mut ArrayVec<[&Point; CAPACITY]>,
+    tree_stack: *const ArrayVec<[Tree; CAPACITY]>,
+    tree_index: TreeIndex,
+) {
+    let tree: &Tree = &(*tree_stack)[tree_index];
+    let bounds: &Bounds = &tree.bounds;
+    let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
+    let y: f64 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
+    if ((x * x) + (y * y)) < SEARCH_RADIUS_SQUARED {
+        let neighbor: &Point = &tree.point;
+        if (point != neighbor)
+            && (squared_distance(point, neighbor) < SEARCH_RADIUS_SQUARED)
+        {
+            (*neighbors).push(&tree.point);
+        }
+        if let Some(left) = tree.left {
+            search_tree(point, neighbors, tree_stack, left);
+        }
+        if let Some(right) = tree.right {
+            search_tree(point, neighbors, tree_stack, right);
+        }
+    }
+}
+
 fn draw_tree(
     gl: &mut GlGraphics,
     transform: Matrix2d,
@@ -184,6 +225,8 @@ fn draw_tree(
 fn render(
     gl: &mut GlGraphics,
     args: &RenderArgs,
+    point: &Point,
+    neighbors: &[&Point],
     tree_stack: &ArrayVec<[Tree; CAPACITY]>,
     tree_index: TreeIndex,
 ) {
@@ -203,7 +246,31 @@ fn render(
             transform,
             gl,
         );
+        for neighbor in neighbors {
+            graphics::ellipse(
+                RED,
+                [
+                    neighbor.x - RADIUS_2,
+                    neighbor.y - RADIUS_2,
+                    RADIUS_4,
+                    RADIUS_4,
+                ],
+                transform,
+                gl,
+            );
+        }
         draw_tree(gl, transform, tree_stack, tree_index);
+        graphics::ellipse(
+            CYAN,
+            [
+                point.x - SEARCH_RADIUS,
+                point.y - SEARCH_RADIUS,
+                SEARCH_RADIUS_2,
+                SEARCH_RADIUS_2,
+            ],
+            transform,
+            gl,
+        );
     })
 }
 
@@ -230,6 +297,7 @@ fn main() {
             }
         };
     }
+    let mut point: Point = point!();
     let mut points: ArrayVec<[Point; CAPACITY]> = ArrayVec::new();
     for _ in 0..CAPACITY {
         unsafe {
@@ -237,18 +305,46 @@ fn main() {
         }
     }
     let mut tree_stack: ArrayVec<[Tree; CAPACITY]> = ArrayVec::new();
+    let mut neighbors: ArrayVec<[&Point; CAPACITY]> = ArrayVec::new();
+    let mut counter: u16 = 0;
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
+            if RELOAD_FRAME_INTERVAL < counter {
+                point = point!();
+                for i in 0..CAPACITY {
+                    points[i] = point!();
+                }
+                counter = 0;
+            }
             if let Some(tree_index) =
                 construct_tree(&mut tree_stack, &mut points, true, BOUNDS)
             {
-                render(&mut gl, &args, &tree_stack, tree_index);
-                tree_stack.clear();
+                unsafe {
+                    search_tree(
+                        &point,
+                        &mut neighbors,
+                        &tree_stack,
+                        tree_index,
+                    );
+                }
+                render(
+                    &mut gl,
+                    &args,
+                    &point,
+                    &neighbors,
+                    &tree_stack,
+                    tree_index,
+                );
                 for point in &mut points {
                     point.x += rng.sample(range_walk);
                     point.y += rng.sample(range_walk);
                 }
+                point.x += rng.sample(range_walk);
+                point.y += rng.sample(range_walk);
             }
+            neighbors.clear();
+            tree_stack.clear();
+            counter += 1;
         }
     }
 }
