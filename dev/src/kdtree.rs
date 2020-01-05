@@ -151,60 +151,60 @@ fn squared_distance(a: &Point, b: &Point) -> f64 {
     (x * x) + (y * y)
 }
 
-fn search_tree(
+unsafe fn search_tree(
     point: &Point,
     neighbors: &mut ArrayVec<[&Point; CAPACITY]>,
     tree: *const Tree,
 ) {
-    unsafe {
-        let bounds: &Bounds = &(*tree).bounds;
-        let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
-        let y: f64 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
-        if ((x * x) + (y * y)) < SEARCH_RADIUS_SQUARED {
-            let neighbor: &Point = &(*tree).point;
-            if (point != neighbor)
-                && (squared_distance(point, neighbor) < SEARCH_RADIUS_SQUARED)
-            {
-                neighbors.push(&(*tree).point);
-            }
-            if let Some(left) = (*tree).left {
-                search_tree(point, neighbors, left);
-            }
-            if let Some(right) = (*tree).right {
-                search_tree(point, neighbors, right);
-            }
+    let bounds: &Bounds = &(*tree).bounds;
+    let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
+    let y: f64 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
+    if ((x * x) + (y * y)) < SEARCH_RADIUS_SQUARED {
+        let neighbor: &Point = &(*tree).point;
+        if (point != neighbor)
+            && (squared_distance(point, neighbor) < SEARCH_RADIUS_SQUARED)
+        {
+            neighbors.push(&(*tree).point);
         }
-    }
-}
-
-fn draw_tree(gl: &mut GlGraphics, transform: Matrix2d, tree: *const Tree) {
-    unsafe {
-        let point: &Point = &(*tree).point;
-        let x: f64 = point.x;
-        let y: f64 = point.y;
-        let bounds: &Bounds = &(*tree).bounds;
-        let line: [f64; 4] = if (*tree).horizontal {
-            [x, bounds.lower.y, x, bounds.upper.y]
-        } else {
-            [bounds.lower.x, y, bounds.upper.x, y]
-        };
-        graphics::ellipse(
-            LIGHT_GRAY,
-            [x - RADIUS, y - RADIUS, RADIUS_2, RADIUS_2],
-            transform,
-            gl,
-        );
-        graphics::line(LIGHT_GRAY, LINE_WIDTH, line, transform, gl);
         if let Some(left) = (*tree).left {
-            draw_tree(gl, transform, left);
+            search_tree(point, neighbors, left);
         }
         if let Some(right) = (*tree).right {
-            draw_tree(gl, transform, right);
+            search_tree(point, neighbors, right);
         }
     }
 }
 
-fn render(
+unsafe fn draw_tree(
+    gl: &mut GlGraphics,
+    transform: Matrix2d,
+    tree: *const Tree,
+) {
+    let point: &Point = &(*tree).point;
+    let x: f64 = point.x;
+    let y: f64 = point.y;
+    let bounds: &Bounds = &(*tree).bounds;
+    let line: [f64; 4] = if (*tree).horizontal {
+        [x, bounds.lower.y, x, bounds.upper.y]
+    } else {
+        [bounds.lower.x, y, bounds.upper.x, y]
+    };
+    graphics::ellipse(
+        LIGHT_GRAY,
+        [x - RADIUS, y - RADIUS, RADIUS_2, RADIUS_2],
+        transform,
+        gl,
+    );
+    graphics::line(LIGHT_GRAY, LINE_WIDTH, line, transform, gl);
+    if let Some(left) = (*tree).left {
+        draw_tree(gl, transform, left);
+    }
+    if let Some(right) = (*tree).right {
+        draw_tree(gl, transform, right);
+    }
+}
+
+unsafe fn render(
     gl: &mut GlGraphics,
     args: &RenderArgs,
     point: &Point,
@@ -292,8 +292,10 @@ fn main() {
             {
                 let mut neighbors: ArrayVec<[&Point; CAPACITY]> =
                     ArrayVec::new();
-                search_tree(&point, &mut neighbors, tree);
-                render(&mut gl, &args, &point, &neighbors, tree);
+                unsafe {
+                    search_tree(&point, &mut neighbors, tree);
+                    render(&mut gl, &args, &point, &neighbors, tree);
+                }
             }
             point.x += rng.sample(range_walk);
             point.y += rng.sample(range_walk);
