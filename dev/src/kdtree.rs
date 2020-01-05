@@ -167,7 +167,7 @@ fn squared_distance(a: &Point, b: &Point) -> f64 {
 
 unsafe fn search_tree(
     point: &Point,
-    neighbors: *mut ArrayVec<[&Point; CAPACITY]>,
+    neighbors: &mut ArrayVec<[&Point; CAPACITY]>,
     tree_stack: *const ArrayVec<[Tree; CAPACITY]>,
     tree_index: TreeIndex,
 ) {
@@ -180,7 +180,7 @@ unsafe fn search_tree(
         if (point != neighbor)
             && (squared_distance(point, neighbor) < SEARCH_RADIUS_SQUARED)
         {
-            (*neighbors).push(&tree.point);
+            neighbors.push(&tree.point);
         }
         if let Some(left) = tree.left {
             search_tree(point, neighbors, tree_stack, left);
@@ -312,7 +312,8 @@ fn main() {
             if RELOAD_FRAME_INTERVAL < counter {
                 point = point!();
                 for i in 0..CAPACITY {
-                    points[i] = point!();
+                    points[i].x = rng.sample(range_init);
+                    points[i].y = rng.sample(range_init);
                 }
                 counter = 0;
             }
@@ -335,12 +336,12 @@ fn main() {
                     &tree_stack,
                     tree_index,
                 );
+                point.x += rng.sample(range_walk);
+                point.y += rng.sample(range_walk);
                 for point in &mut points {
                     point.x += rng.sample(range_walk);
                     point.y += rng.sample(range_walk);
                 }
-                point.x += rng.sample(range_walk);
-                point.y += rng.sample(range_walk);
             }
             neighbors.clear();
             tree_stack.clear();
