@@ -113,17 +113,6 @@ fn init(
     }
 }
 
-macro_rules! replace_neighbor {
-    ($node:expr, $old:expr, $new:expr $(,)?) => {
-        for neighbor in &mut $node.neighbors {
-            if *neighbor == $old {
-                *neighbor = $new;
-                break;
-            }
-        }
-    };
-}
-
 #[allow(clippy::many_single_char_names)]
 fn intersection(a: &Point, b: &Point, c: &Point, d: &Point) -> Option<Point> {
     /* NOTE:     `a`
@@ -154,6 +143,17 @@ fn intersection(a: &Point, b: &Point, c: &Point, d: &Point) -> Option<Point> {
         }
     }
     None
+}
+
+macro_rules! replace_neighbor {
+    ($node:expr, $old:expr, $new:expr $(,)?) => {
+        for neighbor in &mut $node.neighbors {
+            if *neighbor == $old {
+                *neighbor = $new;
+                break;
+            }
+        }
+    };
 }
 
 #[allow(
