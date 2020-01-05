@@ -24,7 +24,7 @@ const ANTI_ALIAS: u8 = 4;
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
 const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
 const RED: [f32; 4] = [0.92, 0.47, 0.47, 0.75];
-const CYAN: [f32; 4] = [0.17, 0.82, 0.76, 0.15];
+const TEAL: [f32; 4] = [0.17, 0.82, 0.76, 0.15];
 
 const LINE_WIDTH: f64 = 1.15;
 const RADIUS: f64 = 6.0;
@@ -244,7 +244,7 @@ fn render(
         }
         draw_tree(gl, transform, tree_stack, tree_index);
         graphics::ellipse(
-            CYAN,
+            TEAL,
             [
                 point.x - SEARCH_RADIUS,
                 point.y - SEARCH_RADIUS,

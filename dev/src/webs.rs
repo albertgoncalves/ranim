@@ -23,8 +23,8 @@ const ANTI_ALIAS: u8 = 4;
 
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
 const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
-const GREEN: [f32; 4] = [0.5, 1.0, 0.87, 1.0];
-const CYAN: [f32; 4] = [0.17, 0.82, 0.76, 0.15];
+const CYAN: [f32; 4] = [0.5, 1.0, 0.87, 1.0];
+const TEAL: [f32; 4] = [0.17, 0.82, 0.76, 0.15];
 
 const LINE_WIDTH: f64 = 0.8;
 const RADIUS: f64 = 3.5;
@@ -372,7 +372,7 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
                 let b: &Point = &(*edge.b).point;
                 let rect: Rect = bounds(a, b);
                 graphics::rectangle(
-                    CYAN,
+                    TEAL,
                     [
                         rect.x - RECT_PAD,
                         rect.y - RECT_PAD,
@@ -383,20 +383,20 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
                     gl,
                 );
                 graphics::line(
-                    GREEN,
+                    CYAN,
                     LINE_WIDTH,
                     [a.x, a.y, b.x, b.y],
                     transform,
                     gl,
                 );
                 graphics::ellipse(
-                    GREEN,
+                    CYAN,
                     [a.x - RADIUS, a.y - RADIUS, RADIUS_2, RADIUS_2],
                     transform,
                     gl,
                 );
                 graphics::ellipse(
-                    GREEN,
+                    CYAN,
                     [b.x - RADIUS, b.y - RADIUS, RADIUS_2, RADIUS_2],
                     transform,
                     gl,

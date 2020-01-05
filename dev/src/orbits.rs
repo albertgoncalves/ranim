@@ -21,7 +21,7 @@ const WINDOW_RECT: [f64; 4] = [
 
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
 const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
-const CYAN: [f32; 4] = [0.17, 0.82, 0.76, 0.35];
+const TEAL: [f32; 4] = [0.17, 0.82, 0.76, 0.35];
 
 const LINE_WIDTH: f64 = 1.15;
 const RECT_PAD: f64 = 10.0;
@@ -103,7 +103,7 @@ fn render(
                 }
             };
             graphics::rectangle(
-                CYAN,
+                TEAL,
                 [
                     min_x - RECT_PAD,
                     min_y - RECT_PAD,
