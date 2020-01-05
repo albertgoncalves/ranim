@@ -31,8 +31,8 @@ const RADIUS: f64 = 6.0;
 const RADIUS_2: f64 = RADIUS * 2.0;
 const RADIUS_4: f64 = RADIUS * 4.0;
 
-const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF;
-const POINT_RNG_LOWER: f64 = WINDOW_EDGE_HALF_MINUS;
+const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF - 50.0;
+const POINT_RNG_LOWER: f64 = -POINT_RNG_UPPER;
 const WALK_RNG_UPPER: f64 = 0.35;
 const WALK_RNG_LOWER: f64 = -WALK_RNG_UPPER;
 
@@ -57,12 +57,12 @@ struct Bounds {
 
 const BOUNDS: Bounds = Bounds {
     lower: Point {
-        x: POINT_RNG_LOWER,
-        y: POINT_RNG_LOWER,
+        x: WINDOW_EDGE_HALF_MINUS,
+        y: WINDOW_EDGE_HALF_MINUS,
     },
     upper: Point {
-        x: POINT_RNG_UPPER,
-        y: POINT_RNG_UPPER,
+        x: WINDOW_EDGE_HALF,
+        y: WINDOW_EDGE_HALF,
     },
 };
 
