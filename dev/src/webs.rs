@@ -10,8 +10,15 @@ use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
 
-const WINDOW_WIDTH: f64 = 500.0;
-const WINDOW_HEIGHT: f64 = 500.0;
+const WINDOW_EDGE: f64 = 800.0;
+const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
+const WINDOW_EDGE_HALF_MINUS: f64 = -WINDOW_EDGE_HALF;
+const WINDOW_RECT: [f64; 4] = [
+    WINDOW_EDGE_HALF_MINUS,
+    WINDOW_EDGE_HALF_MINUS,
+    WINDOW_EDGE,
+    WINDOW_EDGE,
+];
 const ANTI_ALIAS: u8 = 4;
 
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
@@ -25,8 +32,8 @@ const RADIUS_2: f64 = RADIUS * 2.0;
 const RECT_PAD: f64 = 17.5;
 const RECT_PAD_2: f64 = RECT_PAD * 2.0;
 
-const POINT_RNG_UPPER: f64 = 400.0;
-const POINT_RNG_LOWER: f64 = -POINT_RNG_UPPER;
+const POINT_RNG_LOWER: f64 = WINDOW_EDGE_HALF_MINUS;
+const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF;
 const POINT_DRAG: f64 = 0.0025;
 const NEIGHBOR_DISTANCE_SQUARED: f64 = 100.0;
 
@@ -356,7 +363,8 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
         let transform: Matrix2d = context
             .transform
             .trans(args.window_size[0] / 2.0, args.window_size[1] / 2.0);
-        graphics::clear(DARK_GRAY, gl);
+        graphics::clear(LIGHT_GRAY, gl);
+        graphics::rectangle(DARK_GRAY, WINDOW_RECT, transform, gl);
         unsafe {
             {
                 let edge: &Edge = &edges[n - 1];
@@ -412,7 +420,7 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
 fn main() {
     let opengl: OpenGL = OpenGL::V3_2;
     let mut settings: WindowSettings =
-        WindowSettings::new("ranim", [WINDOW_WIDTH, WINDOW_HEIGHT])
+        WindowSettings::new("ranim", [WINDOW_EDGE, WINDOW_EDGE])
             .graphics_api(opengl)
             .exit_on_esc(true);
     settings.set_samples(ANTI_ALIAS);
