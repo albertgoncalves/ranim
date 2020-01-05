@@ -100,39 +100,29 @@ fn construct(
         return None;
     }
     let median: usize = n / 2;
+    let lower_x: f64 = bounds.lower.x;
+    let lower_y: f64 = bounds.lower.y;
+    let upper_x: f64 = bounds.upper.x;
+    let upper_y: f64 = bounds.upper.y;
     let (point, left_bounds, right_bounds): (Point, Bounds, Bounds) = {
         if horizontal {
             points.sort_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
             let point: Point = points[median].clone();
-            let left_bounds: Bounds = bounds!(
-                bounds.lower.x, //
-                bounds.lower.y, //
-                point.x,        //
-                bounds.upper.y,
-            );
-            let right_bounds: Bounds = bounds!(
-                point.x,        //
-                bounds.lower.y, //
-                bounds.upper.x, //
-                bounds.upper.y,
-            );
-            (point, left_bounds, right_bounds)
+            let x: f64 = point.x;
+            (
+                point,
+                bounds!(lower_x, lower_y, x, upper_y),
+                bounds!(x, lower_y, upper_x, upper_y),
+            )
         } else {
             points.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
             let point: Point = points[median].clone();
-            let left_bounds: Bounds = bounds!(
-                bounds.lower.x, //
-                bounds.lower.y, //
-                bounds.upper.x, //
-                point.y,
-            );
-            let right_bounds: Bounds = bounds!(
-                bounds.lower.x, //
-                point.y,        //
-                bounds.upper.x, //
-                bounds.upper.y,
-            );
-            (point, left_bounds, right_bounds)
+            let y: f64 = point.y;
+            (
+                point,
+                bounds!(lower_x, lower_y, upper_x, y),
+                bounds!(lower_x, y, upper_x, upper_y),
+            )
         }
     };
     let left: Option<TreeIndex> =
@@ -161,29 +151,18 @@ fn draw_tree(
     tree_index: TreeIndex,
 ) {
     let tree: &Tree = &tree_stack[tree_index];
+    let point: &Point = &tree.point;
+    let x: f64 = point.x;
+    let y: f64 = point.y;
+    let bounds: &Bounds = &tree.bounds;
     let line: [f64; 4] = if tree.horizontal {
-        [
-            tree.point.x,
-            tree.bounds.lower.y,
-            tree.point.x,
-            tree.bounds.upper.y,
-        ]
+        [x, bounds.lower.y, x, bounds.upper.y]
     } else {
-        [
-            tree.bounds.lower.x,
-            tree.point.y,
-            tree.bounds.upper.x,
-            tree.point.y,
-        ]
+        [bounds.lower.x, y, bounds.upper.x, y]
     };
     graphics::ellipse(
         LIGHT_GRAY,
-        [
-            tree.point.x - RADIUS,
-            tree.point.y - RADIUS,
-            RADIUS_2,
-            RADIUS_2,
-        ],
+        [x - RADIUS, y - RADIUS, RADIUS_2, RADIUS_2],
         transform,
         gl,
     );
