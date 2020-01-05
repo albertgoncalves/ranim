@@ -66,14 +66,12 @@ const BOUNDS: Bounds = Bounds {
     },
 };
 
-type TreeIndex = usize;
-
 struct Tree {
     point: Point,
     bounds: Bounds,
     horizontal: bool,
-    left: Option<TreeIndex>,
-    right: Option<TreeIndex>,
+    left: Option<*const Tree>,
+    right: Option<*const Tree>,
 }
 
 macro_rules! bounds {
@@ -92,11 +90,11 @@ macro_rules! bounds {
 }
 
 fn construct_tree(
-    tree_stack: &mut ArrayVec<[Tree; CAPACITY]>,
+    trees: &mut ArrayVec<[Tree; CAPACITY]>,
     points: &mut [Point],
     horizontal: bool,
     bounds: Bounds,
-) -> Option<TreeIndex> {
+) -> Option<*const Tree> {
     let n: usize = points.len();
     if n == 0 {
         return None;
@@ -127,21 +125,16 @@ fn construct_tree(
             )
         }
     };
-    let left: Option<TreeIndex> = construct_tree(
-        tree_stack,
-        &mut points[..median],
-        !horizontal,
-        left_bounds,
-    );
-    let right: Option<TreeIndex> = construct_tree(
-        tree_stack,
+    let left: Option<*const Tree> =
+        construct_tree(trees, &mut points[..median], !horizontal, left_bounds);
+    let right: Option<*const Tree> = construct_tree(
+        trees,
         &mut points[(median + 1)..],
         !horizontal,
         right_bounds,
     );
-    let tree_index: TreeIndex = tree_stack.len();
     unsafe {
-        tree_stack.push_unchecked(Tree {
+        trees.push_unchecked(Tree {
             point,
             bounds,
             horizontal,
@@ -149,7 +142,7 @@ fn construct_tree(
             right,
         });
     }
-    Some(tree_index)
+    trees.last().map(|tree| tree as *const Tree)
 }
 
 fn squared_distance(a: &Point, b: &Point) -> f64 {
@@ -158,60 +151,56 @@ fn squared_distance(a: &Point, b: &Point) -> f64 {
     (x * x) + (y * y)
 }
 
-fn search_tree<'a, 'b, 'c>(
-    point: &'a Point,
-    neighbors: &'b mut ArrayVec<[&'c Point; CAPACITY]>,
-    tree_stack: &'c ArrayVec<[Tree; CAPACITY]>,
-    tree_index: TreeIndex,
+fn search_tree(
+    point: &Point,
+    neighbors: &mut ArrayVec<[&Point; CAPACITY]>,
+    tree: *const Tree,
 ) {
-    let tree: &Tree = &tree_stack[tree_index];
-    let bounds: &Bounds = &tree.bounds;
-    let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
-    let y: f64 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
-    if ((x * x) + (y * y)) < SEARCH_RADIUS_SQUARED {
-        let neighbor: &Point = &tree.point;
-        if (point != neighbor)
-            && (squared_distance(point, neighbor) < SEARCH_RADIUS_SQUARED)
-        {
-            neighbors.push(&tree.point);
-        }
-        if let Some(left) = tree.left {
-            search_tree(point, neighbors, tree_stack, left);
-        }
-        if let Some(right) = tree.right {
-            search_tree(point, neighbors, tree_stack, right);
+    unsafe {
+        let bounds: &Bounds = &(*tree).bounds;
+        let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
+        let y: f64 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
+        if ((x * x) + (y * y)) < SEARCH_RADIUS_SQUARED {
+            let neighbor: &Point = &(*tree).point;
+            if (point != neighbor)
+                && (squared_distance(point, neighbor) < SEARCH_RADIUS_SQUARED)
+            {
+                neighbors.push(&(*tree).point);
+            }
+            if let Some(left) = (*tree).left {
+                search_tree(point, neighbors, left);
+            }
+            if let Some(right) = (*tree).right {
+                search_tree(point, neighbors, right);
+            }
         }
     }
 }
 
-fn draw_tree(
-    gl: &mut GlGraphics,
-    transform: Matrix2d,
-    tree_stack: &ArrayVec<[Tree; CAPACITY]>,
-    tree_index: TreeIndex,
-) {
-    let tree: &Tree = &tree_stack[tree_index];
-    let point: &Point = &tree.point;
-    let x: f64 = point.x;
-    let y: f64 = point.y;
-    let bounds: &Bounds = &tree.bounds;
-    let line: [f64; 4] = if tree.horizontal {
-        [x, bounds.lower.y, x, bounds.upper.y]
-    } else {
-        [bounds.lower.x, y, bounds.upper.x, y]
-    };
-    graphics::ellipse(
-        LIGHT_GRAY,
-        [x - RADIUS, y - RADIUS, RADIUS_2, RADIUS_2],
-        transform,
-        gl,
-    );
-    graphics::line(LIGHT_GRAY, LINE_WIDTH, line, transform, gl);
-    if let Some(left) = tree.left {
-        draw_tree(gl, transform, tree_stack, left);
-    }
-    if let Some(right) = tree.right {
-        draw_tree(gl, transform, tree_stack, right);
+fn draw_tree(gl: &mut GlGraphics, transform: Matrix2d, tree: *const Tree) {
+    unsafe {
+        let point: &Point = &(*tree).point;
+        let x: f64 = point.x;
+        let y: f64 = point.y;
+        let bounds: &Bounds = &(*tree).bounds;
+        let line: [f64; 4] = if (*tree).horizontal {
+            [x, bounds.lower.y, x, bounds.upper.y]
+        } else {
+            [bounds.lower.x, y, bounds.upper.x, y]
+        };
+        graphics::ellipse(
+            LIGHT_GRAY,
+            [x - RADIUS, y - RADIUS, RADIUS_2, RADIUS_2],
+            transform,
+            gl,
+        );
+        graphics::line(LIGHT_GRAY, LINE_WIDTH, line, transform, gl);
+        if let Some(left) = (*tree).left {
+            draw_tree(gl, transform, left);
+        }
+        if let Some(right) = (*tree).right {
+            draw_tree(gl, transform, right);
+        }
     }
 }
 
@@ -220,8 +209,7 @@ fn render(
     args: &RenderArgs,
     point: &Point,
     neighbors: &[&Point],
-    tree_stack: &ArrayVec<[Tree; CAPACITY]>,
-    tree_index: TreeIndex,
+    tree: *const Tree,
 ) {
     gl.draw(args.viewport(), |context, gl| {
         let transform: Matrix2d = context
@@ -242,7 +230,7 @@ fn render(
                 gl,
             );
         }
-        draw_tree(gl, transform, tree_stack, tree_index);
+        draw_tree(gl, transform, tree);
         graphics::ellipse(
             TEAL,
             [
@@ -298,21 +286,14 @@ fn main() {
                 }
                 counter = 0;
             }
-            let mut tree_stack: ArrayVec<[Tree; CAPACITY]> = ArrayVec::new();
-            if let Some(tree_index) =
-                construct_tree(&mut tree_stack, &mut points, true, BOUNDS)
+            let mut trees: ArrayVec<[Tree; CAPACITY]> = ArrayVec::new();
+            if let Some(tree) =
+                construct_tree(&mut trees, &mut points, true, BOUNDS)
             {
                 let mut neighbors: ArrayVec<[&Point; CAPACITY]> =
                     ArrayVec::new();
-                search_tree(&point, &mut neighbors, &tree_stack, tree_index);
-                render(
-                    &mut gl,
-                    &args,
-                    &point,
-                    &neighbors,
-                    &tree_stack,
-                    tree_index,
-                );
+                search_tree(&point, &mut neighbors, tree);
+                render(&mut gl, &args, &point, &neighbors, tree);
             }
             point.x += rng.sample(range_walk);
             point.y += rng.sample(range_walk);
