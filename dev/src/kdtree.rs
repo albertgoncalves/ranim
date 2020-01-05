@@ -89,7 +89,7 @@ macro_rules! bounds {
     };
 }
 
-fn construct(
+fn construct_tree(
     tree_stack: &mut ArrayVec<[Tree; CAPACITY]>,
     points: &mut [Point],
     horizontal: bool,
@@ -125,9 +125,13 @@ fn construct(
             )
         }
     };
-    let left: Option<TreeIndex> =
-        construct(tree_stack, &mut points[..median], !horizontal, left_bounds);
-    let right: Option<TreeIndex> = construct(
+    let left: Option<TreeIndex> = construct_tree(
+        tree_stack,
+        &mut points[..median],
+        !horizontal,
+        left_bounds,
+    );
+    let right: Option<TreeIndex> = construct_tree(
         tree_stack,
         &mut points[(median + 1)..],
         !horizontal,
@@ -232,7 +236,7 @@ fn main() {
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
             if let Some(tree_index) =
-                construct(&mut tree_stack, &mut points, true, BOUNDS)
+                construct_tree(&mut tree_stack, &mut points, true, BOUNDS)
             {
                 render(&mut gl, &args, &tree_stack, tree_index);
                 tree_stack.clear();
