@@ -138,13 +138,15 @@ fn construct_tree(
         right_bounds,
     );
     let tree_index: TreeIndex = tree_stack.len();
-    tree_stack.push(Tree {
-        point,
-        bounds,
-        horizontal,
-        left,
-        right,
-    });
+    unsafe {
+        tree_stack.push_unchecked(Tree {
+            point,
+            bounds,
+            horizontal,
+            left,
+            right,
+        });
+    }
     Some(tree_index)
 }
 
@@ -230,7 +232,9 @@ fn main() {
     }
     let mut points: ArrayVec<[Point; CAPACITY]> = ArrayVec::new();
     for _ in 0..CAPACITY {
-        points.push(point!());
+        unsafe {
+            points.push_unchecked(point!());
+        }
     }
     let mut tree_stack: ArrayVec<[Tree; CAPACITY]> = ArrayVec::new();
     while let Some(event) = events.next(&mut window) {
