@@ -158,13 +158,13 @@ fn squared_distance(a: &Point, b: &Point) -> f64 {
     (x * x) + (y * y)
 }
 
-unsafe fn search_tree(
-    point: &Point,
-    neighbors: &mut ArrayVec<[&Point; CAPACITY]>,
-    tree_stack: *const ArrayVec<[Tree; CAPACITY]>,
+fn search_tree<'a, 'b, 'c>(
+    point: &'a Point,
+    neighbors: &'b mut ArrayVec<[&'c Point; CAPACITY]>,
+    tree_stack: &'c ArrayVec<[Tree; CAPACITY]>,
     tree_index: TreeIndex,
 ) {
-    let tree: &Tree = &(*tree_stack)[tree_index];
+    let tree: &Tree = &tree_stack[tree_index];
     let bounds: &Bounds = &tree.bounds;
     let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
     let y: f64 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
@@ -287,8 +287,6 @@ fn main() {
             points.push_unchecked(point!());
         }
     }
-    let mut tree_stack: ArrayVec<[Tree; CAPACITY]> = ArrayVec::new();
-    let mut neighbors: ArrayVec<[&Point; CAPACITY]> = ArrayVec::new();
     let mut counter: u16 = 0;
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
@@ -300,17 +298,13 @@ fn main() {
                 }
                 counter = 0;
             }
+            let mut tree_stack: ArrayVec<[Tree; CAPACITY]> = ArrayVec::new();
             if let Some(tree_index) =
                 construct_tree(&mut tree_stack, &mut points, true, BOUNDS)
             {
-                unsafe {
-                    search_tree(
-                        &point,
-                        &mut neighbors,
-                        &tree_stack,
-                        tree_index,
-                    );
-                }
+                let mut neighbors: ArrayVec<[&Point; CAPACITY]> =
+                    ArrayVec::new();
+                search_tree(&point, &mut neighbors, &tree_stack, tree_index);
                 render(
                     &mut gl,
                     &args,
@@ -319,15 +313,13 @@ fn main() {
                     &tree_stack,
                     tree_index,
                 );
+            }
+            point.x += rng.sample(range_walk);
+            point.y += rng.sample(range_walk);
+            for point in &mut points {
                 point.x += rng.sample(range_walk);
                 point.y += rng.sample(range_walk);
-                for point in &mut points {
-                    point.x += rng.sample(range_walk);
-                    point.y += rng.sample(range_walk);
-                }
             }
-            neighbors.clear();
-            tree_stack.clear();
             counter += 1;
         }
     }
