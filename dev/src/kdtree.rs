@@ -9,6 +9,7 @@ use piston::window::WindowSettings;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
+use std::ptr;
 
 const WINDOW_EDGE: f64 = 800.0;
 const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
@@ -70,8 +71,8 @@ struct Tree {
     point: Point,
     bounds: Bounds,
     horizontal: bool,
-    left: Option<*const Tree>,
-    right: Option<*const Tree>,
+    left: *const Tree,
+    right: *const Tree,
 }
 
 macro_rules! bounds {
@@ -94,10 +95,10 @@ fn construct_tree(
     points: &mut [Point],
     horizontal: bool,
     bounds: Bounds,
-) -> Option<*const Tree> {
+) -> *const Tree {
     let n: usize = points.len();
     if n == 0 {
-        return None;
+        return ptr::null();
     }
     let median: usize = n / 2;
     let lower_x: f64 = bounds.lower.x;
@@ -125,9 +126,9 @@ fn construct_tree(
             )
         }
     };
-    let left: Option<*const Tree> =
+    let left: *const Tree =
         construct_tree(trees, &mut points[..median], !horizontal, left_bounds);
-    let right: Option<*const Tree> = construct_tree(
+    let right: *const Tree = construct_tree(
         trees,
         &mut points[(median + 1)..],
         !horizontal,
@@ -142,7 +143,7 @@ fn construct_tree(
             right,
         });
     }
-    trees.last().map(|tree| tree as *const Tree)
+    trees.last().unwrap()
 }
 
 fn squared_distance(a: &Point, b: &Point) -> f64 {
@@ -166,11 +167,11 @@ unsafe fn search_tree(
         {
             neighbors.push(&(*tree).point);
         }
-        if let Some(left) = (*tree).left {
-            search_tree(point, neighbors, left);
+        if !(*tree).left.is_null() {
+            search_tree(point, neighbors, (*tree).left);
         }
-        if let Some(right) = (*tree).right {
-            search_tree(point, neighbors, right);
+        if !(*tree).right.is_null() {
+            search_tree(point, neighbors, (*tree).right);
         }
     }
 }
@@ -196,11 +197,11 @@ unsafe fn draw_tree(
         gl,
     );
     graphics::line(LIGHT_GRAY, LINE_WIDTH, line, transform, gl);
-    if let Some(left) = (*tree).left {
-        draw_tree(gl, transform, left);
+    if !(*tree).left.is_null() {
+        draw_tree(gl, transform, (*tree).left);
     }
-    if let Some(right) = (*tree).right {
-        draw_tree(gl, transform, right);
+    if !(*tree).right.is_null() {
+        draw_tree(gl, transform, (*tree).right);
     }
 }
 
@@ -287,15 +288,12 @@ fn main() {
                 counter = 0;
             }
             let mut trees: ArrayVec<[Tree; CAPACITY]> = ArrayVec::new();
-            if let Some(tree) =
-                construct_tree(&mut trees, &mut points, true, BOUNDS)
-            {
-                let mut neighbors: ArrayVec<[&Point; CAPACITY]> =
-                    ArrayVec::new();
-                unsafe {
-                    search_tree(&point, &mut neighbors, tree);
-                    render(&mut gl, &args, &point, &neighbors, tree);
-                }
+            let tree: *const Tree =
+                construct_tree(&mut trees, &mut points, true, BOUNDS);
+            let mut neighbors: ArrayVec<[&Point; CAPACITY]> = ArrayVec::new();
+            unsafe {
+                search_tree(&point, &mut neighbors, tree);
+                render(&mut gl, &args, &point, &neighbors, tree);
             }
             point.x += rng.sample(range_walk);
             point.y += rng.sample(range_walk);
