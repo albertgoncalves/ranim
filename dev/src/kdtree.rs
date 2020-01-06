@@ -154,8 +154,8 @@ fn squared_distance(a: &Point, b: &Point) -> f64 {
 
 unsafe fn search_tree(
     point: &Point,
-    neighbors: &mut ArrayVec<[&Point; CAPACITY]>,
     tree: *const Tree,
+    neighbors: &mut ArrayVec<[*const Point; CAPACITY]>,
 ) {
     let bounds: &Bounds = &(*tree).bounds;
     let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
@@ -165,43 +165,16 @@ unsafe fn search_tree(
         if (point != neighbor)
             && (squared_distance(point, neighbor) < SEARCH_RADIUS_SQUARED)
         {
-            neighbors.push(&(*tree).point);
+            neighbors.push(neighbor);
         }
-        if !(*tree).left.is_null() {
-            search_tree(point, neighbors, (*tree).left);
+        let left: *const Tree = (*tree).left;
+        if !left.is_null() {
+            search_tree(point, left, neighbors);
         }
-        if !(*tree).right.is_null() {
-            search_tree(point, neighbors, (*tree).right);
+        let right: *const Tree = (*tree).right;
+        if !right.is_null() {
+            search_tree(point, right, neighbors);
         }
-    }
-}
-
-unsafe fn draw_tree(
-    gl: &mut GlGraphics,
-    transform: Matrix2d,
-    tree: *const Tree,
-) {
-    let point: &Point = &(*tree).point;
-    let x: f64 = point.x;
-    let y: f64 = point.y;
-    let bounds: &Bounds = &(*tree).bounds;
-    let line: [f64; 4] = if (*tree).horizontal {
-        [x, bounds.lower.y, x, bounds.upper.y]
-    } else {
-        [bounds.lower.x, y, bounds.upper.x, y]
-    };
-    graphics::ellipse(
-        LIGHT_GRAY,
-        [x - RADIUS, y - RADIUS, RADIUS_2, RADIUS_2],
-        transform,
-        gl,
-    );
-    graphics::line(LIGHT_GRAY, LINE_WIDTH, line, transform, gl);
-    if !(*tree).left.is_null() {
-        draw_tree(gl, transform, (*tree).left);
-    }
-    if !(*tree).right.is_null() {
-        draw_tree(gl, transform, (*tree).right);
     }
 }
 
@@ -209,8 +182,8 @@ unsafe fn render(
     gl: &mut GlGraphics,
     args: &RenderArgs,
     point: &Point,
-    neighbors: &[&Point],
-    tree: *const Tree,
+    trees: &[Tree],
+    neighbors: &mut ArrayVec<[*const Point; CAPACITY]>,
 ) {
     gl.draw(args.viewport(), |context, gl| {
         let [width, height]: [f64; 2] = args.window_size;
@@ -218,12 +191,13 @@ unsafe fn render(
             context.transform.trans(width / 2.0, height / 2.0);
         graphics::clear(LIGHT_GRAY, gl);
         graphics::rectangle(DARK_GRAY, WINDOW_RECT, transform, gl);
-        for neighbor in neighbors {
+        let n: usize = neighbors.len();
+        for neighbor in neighbors.drain(..n) {
             graphics::ellipse(
                 RED,
                 [
-                    neighbor.x - RADIUS_2,
-                    neighbor.y - RADIUS_2,
+                    (*neighbor).x - RADIUS_2,
+                    (*neighbor).y - RADIUS_2,
                     RADIUS_4,
                     RADIUS_4,
                 ],
@@ -231,7 +205,24 @@ unsafe fn render(
                 gl,
             );
         }
-        draw_tree(gl, transform, tree);
+        for tree in trees {
+            let point: &Point = &tree.point;
+            let x: f64 = point.x;
+            let y: f64 = point.y;
+            let bounds: &Bounds = &tree.bounds;
+            let line: [f64; 4] = if tree.horizontal {
+                [x, bounds.lower.y, x, bounds.upper.y]
+            } else {
+                [bounds.lower.x, y, bounds.upper.x, y]
+            };
+            graphics::ellipse(
+                LIGHT_GRAY,
+                [x - RADIUS, y - RADIUS, RADIUS_2, RADIUS_2],
+                transform,
+                gl,
+            );
+            graphics::line(LIGHT_GRAY, LINE_WIDTH, line, transform, gl);
+        }
         graphics::ellipse(
             TEAL,
             [
@@ -278,6 +269,8 @@ fn main() {
             points.push_unchecked(point!());
         }
     }
+    let mut trees: ArrayVec<[Tree; CAPACITY]> = ArrayVec::new();
+    let mut neighbors: ArrayVec<[*const Point; CAPACITY]> = ArrayVec::new();
     let mut counter: u16 = 0;
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
@@ -289,13 +282,14 @@ fn main() {
                 }
                 counter = 0;
             }
-            let mut trees: ArrayVec<[Tree; CAPACITY]> = ArrayVec::new();
-            let tree: *const Tree =
-                construct_tree(&mut trees, &mut points, true, BOUNDS);
-            let mut neighbors: ArrayVec<[&Point; CAPACITY]> = ArrayVec::new();
-            unsafe {
-                search_tree(&point, &mut neighbors, tree);
-                render(&mut gl, &args, &point, &neighbors, tree);
+            {
+                let tree: *const Tree =
+                    construct_tree(&mut trees, &mut points, true, BOUNDS);
+                unsafe {
+                    search_tree(&point, tree, &mut neighbors);
+                    render(&mut gl, &args, &point, &trees, &mut neighbors);
+                }
+                trees.clear();
             }
             point.x += rng.sample(range_walk);
             point.y += rng.sample(range_walk);
