@@ -151,7 +151,7 @@ fn main() {
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();
-    let range: Uniform<f64> =
+    let uniform: Uniform<f64> =
         Uniform::new_inclusive(POINT_RNG_LOWER, POINT_RNG_UPPER);
     let mut xs: [f64; CAPACITY] = [0.0; CAPACITY];
     let mut ys: [f64; CAPACITY] = [0.0; CAPACITY];
@@ -163,8 +163,8 @@ fn main() {
             if RELOAD_FRAME_INTERVAL < counter {
                 counter = 0;
                 for i in 0..CAPACITY {
-                    xs[i] = rng.sample(range);
-                    ys[i] = rng.sample(range);
+                    xs[i] = rng.sample(uniform);
+                    ys[i] = rng.sample(uniform);
                     x_speeds[i] = POINT_SPEED_INIT;
                     y_speeds[i] = POINT_SPEED_INIT;
                 }

@@ -85,7 +85,7 @@ macro_rules! empty_point {
 
 fn init(
     rng: &mut ThreadRng,
-    range: &Uniform<f64>,
+    uniform: &Uniform<f64>,
     nodes: &mut ArrayVec<[Node; NODES_CAP]>,
     edges: &mut ArrayVec<[Edge; EDGES_CAP]>,
 ) {
@@ -93,8 +93,8 @@ fn init(
         unsafe {
             nodes.push_unchecked(Node {
                 point: Point {
-                    x: rng.sample(range),
-                    y: rng.sample(range),
+                    x: rng.sample(uniform),
+                    y: rng.sample(uniform),
                 },
                 neighbors: ArrayVec::new(),
                 next: empty_point!(),
@@ -104,8 +104,8 @@ fn init(
         unsafe {
             nodes.push_unchecked(Node {
                 point: Point {
-                    x: rng.sample(range),
-                    y: rng.sample(range),
+                    x: rng.sample(uniform),
+                    y: rng.sample(uniform),
                 },
                 neighbors: ArrayVec::new(),
                 next: empty_point!(),
@@ -170,18 +170,18 @@ macro_rules! replace_neighbor {
 )]
 fn insert(
     rng: &mut ThreadRng,
-    range: &Uniform<f64>,
+    uniform: &Uniform<f64>,
     nodes: &mut ArrayVec<[Node; NODES_CAP]>,
     edges: &mut ArrayVec<[Edge; EDGES_CAP]>,
 ) {
     loop {
         let candidate_a: Point = Point {
-            x: rng.sample(range),
-            y: rng.sample(range),
+            x: rng.sample(uniform),
+            y: rng.sample(uniform),
         };
         let candidate_b: Point = Point {
-            x: rng.sample(range),
-            y: rng.sample(range),
+            x: rng.sample(uniform),
+            y: rng.sample(uniform),
         };
         let mut intersections: Vec<Intersection> =
             Vec::with_capacity(INTERSECTIONS_CAP);
@@ -430,20 +430,20 @@ fn main() {
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();
-    let range: Uniform<f64> =
+    let uniform: Uniform<f64> =
         Uniform::new_inclusive(POINT_RNG_LOWER, POINT_RNG_UPPER);
     let mut nodes: ArrayVec<[Node; NODES_CAP]> = ArrayVec::new();
     let mut edges: ArrayVec<[Edge; EDGES_CAP]> = ArrayVec::new();
     let mut counter: u16 = 0;
-    init(&mut rng, &range, &mut nodes, &mut edges);
+    init(&mut rng, &uniform, &mut nodes, &mut edges);
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
             if (NODES_LIMIT < nodes.len()) || (EDGES_LIMIT < edges.len()) {
                 nodes.clear();
                 edges.clear();
-                init(&mut rng, &range, &mut nodes, &mut edges);
+                init(&mut rng, &uniform, &mut nodes, &mut edges);
             } else if INSERT_FRAME_INTERVAL < counter {
-                insert(&mut rng, &range, &mut nodes, &mut edges);
+                insert(&mut rng, &uniform, &mut nodes, &mut edges);
                 counter = 0;
             }
             update(&mut nodes);

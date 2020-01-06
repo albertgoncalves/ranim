@@ -259,15 +259,15 @@ fn main() {
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();
-    let range_init: Uniform<f64> =
+    let uniform_init: Uniform<f64> =
         Uniform::new_inclusive(POINT_RNG_LOWER, POINT_RNG_UPPER);
-    let range_walk: Uniform<f64> =
+    let uniform_walk: Uniform<f64> =
         Uniform::new_inclusive(WALK_RNG_LOWER, WALK_RNG_UPPER);
     macro_rules! point {
         () => {
             Point {
-                x: rng.sample(range_init),
-                y: rng.sample(range_init),
+                x: rng.sample(uniform_init),
+                y: rng.sample(uniform_init),
             }
         };
     }
@@ -284,8 +284,8 @@ fn main() {
             if RELOAD_FRAME_INTERVAL < counter {
                 point = point!();
                 for i in 0..CAPACITY {
-                    points[i].x = rng.sample(range_init);
-                    points[i].y = rng.sample(range_init);
+                    points[i].x = rng.sample(uniform_init);
+                    points[i].y = rng.sample(uniform_init);
                 }
                 counter = 0;
             }
@@ -297,11 +297,11 @@ fn main() {
                 search_tree(&point, &mut neighbors, tree);
                 render(&mut gl, &args, &point, &neighbors, tree);
             }
-            point.x += rng.sample(range_walk);
-            point.y += rng.sample(range_walk);
+            point.x += rng.sample(uniform_walk);
+            point.y += rng.sample(uniform_walk);
             for point in &mut points {
-                point.x += rng.sample(range_walk);
-                point.y += rng.sample(range_walk);
+                point.x += rng.sample(uniform_walk);
+                point.y += rng.sample(uniform_walk);
             }
             counter += 1;
         }
