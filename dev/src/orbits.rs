@@ -1,4 +1,3 @@
-use glutin_window::GlutinWindow;
 use graphics::math::Matrix2d;
 use graphics::Transformed;
 use opengl_graphics::{GlGraphics, OpenGL};
@@ -8,6 +7,7 @@ use piston::window::WindowSettings;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
+use sdl2_window::Sdl2Window;
 
 const WINDOW_EDGE: f64 = 800.0;
 const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
@@ -78,9 +78,9 @@ fn render(
     y_speeds: &[f64],
 ) {
     gl.draw(args.viewport(), |context, gl| {
-        let transform: Matrix2d = context
-            .transform
-            .trans(args.window_size[0] / 2.0, args.window_size[1] / 2.0);
+        let [width, height]: [f64; 2] = args.window_size;
+        let transform: Matrix2d =
+            context.transform.trans(width / 2.0, height / 2.0);
         graphics::clear(LIGHT_GRAY, gl);
         graphics::rectangle(DARK_GRAY, WINDOW_RECT, transform, gl);
         {
@@ -139,7 +139,7 @@ fn render(
 
 fn main() {
     let opengl: OpenGL = OpenGL::V3_2;
-    let mut window: GlutinWindow =
+    let mut window: Sdl2Window =
         WindowSettings::new("ranim", [WINDOW_EDGE, WINDOW_EDGE])
             .graphics_api(opengl)
             .exit_on_esc(true)

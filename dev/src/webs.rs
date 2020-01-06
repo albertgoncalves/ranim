@@ -1,5 +1,4 @@
 use arrayvec::ArrayVec;
-use glutin_window::GlutinWindow;
 use graphics::math::Matrix2d;
 use graphics::Transformed;
 use opengl_graphics::{GlGraphics, OpenGL};
@@ -9,6 +8,7 @@ use piston::window::WindowSettings;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
+use sdl2_window::Sdl2Window;
 
 const WINDOW_EDGE: f64 = 800.0;
 const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
@@ -358,16 +358,16 @@ fn bounds(a: &Point, b: &Point) -> Rect {
 }
 
 fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
-    let n: usize = edges.len();
+    let n: usize = edges.len() - 1;
     gl.draw(args.viewport(), |context, gl| {
-        let transform: Matrix2d = context
-            .transform
-            .trans(args.window_size[0] / 2.0, args.window_size[1] / 2.0);
+        let [width, height]: [f64; 2] = args.window_size;
+        let transform: Matrix2d =
+            context.transform.trans(width / 2.0, height / 2.0);
         graphics::clear(LIGHT_GRAY, gl);
         graphics::rectangle(DARK_GRAY, WINDOW_RECT, transform, gl);
         unsafe {
             {
-                let edge: &Edge = &edges[n - 1];
+                let edge: &Edge = &edges[n];
                 let a: &Point = &(*edge.a).point;
                 let b: &Point = &(*edge.b).point;
                 let rect: Rect = bounds(a, b);
@@ -402,7 +402,7 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
                     gl,
                 );
             }
-            for edge in edges.iter().take(n - 1) {
+            for edge in edges.iter().take(n) {
                 let a: &Point = &(*edge.a).point;
                 let b: &Point = &(*edge.b).point;
                 graphics::line(
@@ -424,7 +424,7 @@ fn main() {
             .graphics_api(opengl)
             .exit_on_esc(true);
     settings.set_samples(ANTI_ALIAS);
-    let mut window: GlutinWindow = settings.build().unwrap();
+    let mut window: Sdl2Window = settings.build().unwrap();
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();

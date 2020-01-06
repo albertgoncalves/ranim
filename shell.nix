@@ -2,6 +2,7 @@ with import <nixpkgs> {};
 let
     shared = [
         rustup
+        SDL2
         shellcheck
     ];
     hook = ''
@@ -10,7 +11,13 @@ let
 in
 {
     darwin = mkShell {
-        buildInputs = shared;
+        buildInputs = [
+            (with darwin.apple_sdk.frameworks; [
+                AppKit
+                OpenGL
+                Security
+            ])
+        ] ++ shared;
         shellHook = hook;
     };
     linux = mkShell {
