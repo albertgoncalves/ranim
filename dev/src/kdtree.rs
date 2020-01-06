@@ -248,12 +248,14 @@ unsafe fn render(
 
 fn main() {
     let opengl: OpenGL = OpenGL::V3_2;
-    let mut settings: WindowSettings =
+    let mut window: Sdl2Window =
         WindowSettings::new("ranim", [WINDOW_EDGE, WINDOW_EDGE])
             .graphics_api(opengl)
-            .exit_on_esc(true);
-    settings.set_samples(ANTI_ALIAS);
-    let mut window: Sdl2Window = settings.build().unwrap();
+            .exit_on_esc(true)
+            .samples(ANTI_ALIAS)
+            .vsync(true)
+            .build()
+            .unwrap();
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();

@@ -18,6 +18,7 @@ const WINDOW_RECT: [f64; 4] = [
     WINDOW_EDGE,
     WINDOW_EDGE,
 ];
+const ANTI_ALIAS: u8 = 4;
 
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
 const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
@@ -143,6 +144,8 @@ fn main() {
         WindowSettings::new("ranim", [WINDOW_EDGE, WINDOW_EDGE])
             .graphics_api(opengl)
             .exit_on_esc(true)
+            .samples(ANTI_ALIAS)
+            .vsync(true)
             .build()
             .unwrap();
     let mut events: Events = Events::new(EventSettings::new());
