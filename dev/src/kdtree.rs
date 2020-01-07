@@ -9,6 +9,7 @@ use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
 use sdl2_window::Sdl2Window;
+use std::ptr;
 
 const WINDOW_EDGE: f64 = 800.0;
 const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
@@ -97,7 +98,7 @@ fn construct_tree(
 ) -> *const Tree {
     let n: usize = points.len();
     if n == 0 {
-        return std::ptr::null();
+        return ptr::null();
     }
     let median: usize = n / 2;
     let lower_x: f64 = bounds.lower.x;
