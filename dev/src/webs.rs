@@ -56,7 +56,6 @@ struct Point {
 
 struct Node {
     point: Point,
-    next: Point,
     neighbors: ArrayVec<[*mut Node; NEIGHBORS_CAP]>,
 }
 
@@ -77,12 +76,6 @@ struct Rect {
     height: f64,
 }
 
-macro_rules! empty_point {
-    () => {
-        Point { x: 0.0, y: 0.0 }
-    };
-}
-
 fn init(
     rng: &mut ThreadRng,
     uniform: &Uniform<f64>,
@@ -97,7 +90,6 @@ fn init(
                     y: rng.sample(uniform),
                 },
                 neighbors: ArrayVec::new(),
-                next: empty_point!(),
             });
         }
         let a: *mut Node = nodes.last_mut().unwrap();
@@ -108,7 +100,6 @@ fn init(
                     y: rng.sample(uniform),
                 },
                 neighbors: ArrayVec::new(),
-                next: empty_point!(),
             });
         }
         let b: *mut Node = nodes.last_mut().unwrap();
@@ -163,11 +154,7 @@ macro_rules! replace_neighbor {
     };
 }
 
-#[allow(
-    clippy::comparison_chain,
-    clippy::many_single_char_names,
-    clippy::too_many_lines
-)]
+#[allow(clippy::comparison_chain, clippy::many_single_char_names)]
 fn insert(
     rng: &mut ThreadRng,
     uniform: &Uniform<f64>,
@@ -211,7 +198,6 @@ fn insert(
                 nodes.push_unchecked(Node {
                     point: candidate_a,
                     neighbors: ArrayVec::new(),
-                    next: empty_point!(),
                 });
             }
             let q: *mut Node = nodes.last_mut().unwrap();
@@ -219,7 +205,6 @@ fn insert(
                 nodes.push_unchecked(Node {
                     point: intersection.point,
                     neighbors: ArrayVec::from([a, b, q]),
-                    next: empty_point!(),
                 });
             }
             let p: *mut Node = nodes.last_mut().unwrap();
@@ -254,7 +239,6 @@ fn insert(
                 nodes.push_unchecked(Node {
                     point: r_intersection.point,
                     neighbors: ArrayVec::new(),
-                    next: empty_point!(),
                 });
             }
             let q: *mut Node = nodes.last_mut().unwrap();
@@ -262,7 +246,6 @@ fn insert(
                 nodes.push_unchecked(Node {
                     point: l_intersection.point,
                     neighbors: ArrayVec::from([l_a, l_b, q]),
-                    next: empty_point!(),
                 });
             }
             let p: *mut Node = nodes.last_mut().unwrap();
@@ -294,6 +277,7 @@ fn squared_distance(a: &Point, b: &Point) -> f64 {
 }
 
 fn update(nodes: &mut ArrayVec<[Node; NODES_CAP]>) {
+    let mut updates: ArrayVec<[Option<Point>; NODES_CAP]> = ArrayVec::new();
     for node in nodes[NODES_INIT..].iter_mut() {
         let node_point: &mut Point = &mut node.point;
         let node_x: f64 = node_point.x;
@@ -313,20 +297,22 @@ fn update(nodes: &mut ArrayVec<[Node; NODES_CAP]>) {
                 }
             }
         }
-        let next_point: &mut Point = &mut node.next;
         if 0.0 < n {
-            next_point.x = node_x - ((x / n) * POINT_DRAG);
-            next_point.y = node_y - ((y / n) * POINT_DRAG);
+            updates.push(Some(Point {
+                x: node_x - ((x / n) * POINT_DRAG),
+                y: node_y - ((y / n) * POINT_DRAG),
+            }));
         } else {
-            next_point.x = node_x;
-            next_point.y = node_y;
+            updates.push(None);
         }
     }
-    for node in nodes[NODES_INIT..].iter_mut() {
-        let node_point: &mut Point = &mut node.point;
-        let next_point: &Point = &node.next;
-        node_point.x = next_point.x;
-        node_point.y = next_point.y;
+    let n: usize = nodes.len();
+    for i in NODES_INIT..n {
+        if let Some(update) = &updates[i - NODES_INIT] {
+            let point: &mut Point = &mut nodes[i].point;
+            point.x = update.x;
+            point.y = update.y;
+        }
     }
 }
 
