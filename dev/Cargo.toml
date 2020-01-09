@@ -11,6 +11,11 @@ piston2d-opengl_graphics = "0.69.0"
 pistoncore-sdl2_window = "0.63.0"
 rand = "0.7.2"
 
+[profile.release]
+debug = false
+panic = "abort"
+codegen-units = 1
+
 [[bin]]
 name = "kdtree"
 path = "src/kdtree.rs"
