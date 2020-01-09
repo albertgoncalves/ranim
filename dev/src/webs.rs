@@ -9,7 +9,6 @@ use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
 use sdl2_window::Sdl2Window;
-use std::process;
 
 const WINDOW_EDGE: f64 = 800.0;
 const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
@@ -77,24 +76,6 @@ struct Rect {
     height: f64,
 }
 
-macro_rules! unwrap_option {
-    ($x:expr) => {
-        match $x {
-            Some(y) => y,
-            None => process::exit(1),
-        }
-    };
-}
-
-macro_rules! unwrap_result {
-    ($x:expr) => {
-        match $x {
-            Ok(y) => y,
-            Err(_) => process::exit(1),
-        }
-    };
-}
-
 unsafe fn init(
     rng: &mut ThreadRng,
     uniform: &Uniform<f64>,
@@ -109,7 +90,7 @@ unsafe fn init(
             },
             neighbors: ArrayVec::new(),
         });
-        let a: *mut Node = unwrap_option!(nodes.last_mut());
+        let a: *mut Node = nodes.last_mut().unwrap();
         nodes.push_unchecked(Node {
             point: Point {
                 x: rng.sample(uniform),
@@ -117,7 +98,7 @@ unsafe fn init(
             },
             neighbors: ArrayVec::new(),
         });
-        let b: *mut Node = unwrap_option!(nodes.last_mut());
+        let b: *mut Node = nodes.last_mut().unwrap();
         (*b).neighbors.push_unchecked(a);
         (*a).neighbors.push_unchecked(b);
         edges.push_unchecked(Edge { a, b });
@@ -201,8 +182,7 @@ unsafe fn insert(
              *                 ->       |
              *                         `q`
              */
-            let intersection: Intersection =
-                unwrap_option!(intersections.pop());
+            let intersection: Intersection = intersections.pop().unwrap();
             let edge: &mut Edge = intersection.edge;
             let a: *mut Node = edge.a;
             let b: *mut Node = edge.b;
@@ -210,12 +190,12 @@ unsafe fn insert(
                 point: candidate_a,
                 neighbors: ArrayVec::new(),
             });
-            let q: *mut Node = unwrap_option!(nodes.last_mut());
+            let q: *mut Node = nodes.last_mut().unwrap();
             nodes.push_unchecked(Node {
                 point: intersection.point,
                 neighbors: ArrayVec::from([a, b, q]),
             });
-            let p: *mut Node = unwrap_option!(nodes.last_mut());
+            let p: *mut Node = nodes.last_mut().unwrap();
             replace_neighbor!(*a, b, p);
             replace_neighbor!(*b, a, p);
             (*q).neighbors.push_unchecked(p);
@@ -228,9 +208,8 @@ unsafe fn insert(
              *                     ->         |
              *       `r.a`---`r.b`    `r.a`--`q`--`r.b`
              */
-            intersections.sort_by(|a, b| {
-                unwrap_option!(a.point.x.partial_cmp(&b.point.x))
-            });
+            intersections
+                .sort_by(|a, b| a.point.x.partial_cmp(&b.point.x).unwrap());
             let i: usize = rng.gen_range(0, n - 1);
             let l_intersection: Intersection = intersections.remove(i);
             let r_intersection: Intersection = intersections.remove(i);
@@ -244,12 +223,12 @@ unsafe fn insert(
                 point: r_intersection.point,
                 neighbors: ArrayVec::new(),
             });
-            let q: *mut Node = unwrap_option!(nodes.last_mut());
+            let q: *mut Node = nodes.last_mut().unwrap();
             nodes.push_unchecked(Node {
                 point: l_intersection.point,
                 neighbors: ArrayVec::from([l_a, l_b, q]),
             });
-            let p: *mut Node = unwrap_option!(nodes.last_mut());
+            let p: *mut Node = nodes.last_mut().unwrap();
             replace_neighbor!(*l_a, l_b, p);
             replace_neighbor!(*l_b, l_a, p);
             replace_neighbor!(*r_a, r_b, q);
@@ -397,17 +376,14 @@ unsafe fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
 
 fn main() {
     let opengl: OpenGL = OpenGL::V3_2;
-    let mut window: Sdl2Window = {
-        unwrap_result!(WindowSettings::new(
-            "ranim",
-            [WINDOW_EDGE, WINDOW_EDGE],
-        )
-        .graphics_api(opengl)
-        .exit_on_esc(true)
-        .samples(ANTI_ALIAS)
-        .vsync(true)
-        .build())
-    };
+    let mut window: Sdl2Window =
+        WindowSettings::new("ranim", [WINDOW_EDGE, WINDOW_EDGE])
+            .graphics_api(opengl)
+            .exit_on_esc(true)
+            .samples(ANTI_ALIAS)
+            .vsync(true)
+            .build()
+            .unwrap();
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();
