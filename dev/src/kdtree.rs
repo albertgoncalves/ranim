@@ -264,8 +264,8 @@ fn main() {
     }
     let mut point: Point = point!();
     let mut points: ArrayVec<[Point; CAPACITY]> = ArrayVec::new();
-    for _ in 0..CAPACITY {
-        unsafe {
+    unsafe {
+        for _ in 0..CAPACITY {
             points.push_unchecked(point!());
         }
     }
