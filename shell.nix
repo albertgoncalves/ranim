@@ -22,7 +22,9 @@ in
     };
     linux = mkShell {
         buildInputs = [
+            linuxPackages.perf
             pkg-config
+            valgrind
         ] ++ shared;
         APPEND_LIBRARY_PATH = stdenv.lib.makeLibraryPath [
             libGL

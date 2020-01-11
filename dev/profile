@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ -z "$1" ] || [ ! "$(uname -s)" = "Linux" ]; then
+    exit 1
+fi
+
+sudo sh -c 'echo 1 >/proc/sys/kernel/perf_event_paranoid'
+perf record -g "$1"
+perf report
+rm perf.data*
+valgrind --tool=cachegrind "$1"
+rm cachegrind.out.*
