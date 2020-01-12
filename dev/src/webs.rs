@@ -255,8 +255,8 @@ fn squared_distance(a: &Point, b: &Point) -> f64 {
 unsafe fn update(nodes: &mut ArrayVec<[Node; NODES_CAP]>) {
     let mut updates: ArrayVec<[(usize, Point); NODES_CAP]> = ArrayVec::new();
     for i in NODES_INIT..nodes.len() {
-        let node: &mut Node = nodes.get_unchecked_mut(i);
-        let node_point: &mut Point = &mut node.point;
+        let node: &Node = nodes.get_unchecked(i);
+        let node_point: &Point = &node.point;
         let node_x: f64 = node_point.x;
         let node_y: f64 = node_point.y;
         let mut n: f64 = 0.0;
