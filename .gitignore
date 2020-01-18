@@ -5,6 +5,7 @@
 !.shellhook
 !dev/
 !src/
+!*_lib/
 !*.toml
 !*.rs
 !profile
