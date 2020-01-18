@@ -6,10 +6,12 @@ use rand::Rng;
 const POINT_DRAG: f64 = 0.0025;
 const NEIGHBOR_DISTANCE_SQUARED: f64 = 100.0;
 
-pub const EDGES_CAP: usize = 1024;
-const EDGES_INIT: usize = 1;
 pub const NODES_CAP: usize = 1024;
+pub const EDGES_CAP: usize = 1024;
+
 const NODES_INIT: usize = EDGES_INIT * 2;
+const EDGES_INIT: usize = 1;
+
 const NEIGHBORS_CAP: usize = 3;
 const INTERSECTIONS_CAP: usize = 16;
 
