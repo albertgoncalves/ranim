@@ -156,27 +156,26 @@ fn main() {
                     points[i].y = rng.sample(uniform_init);
                 }
                 counter = 0;
-            }
-            {
-                let tree: *const Tree = kdtree_lib::construct_tree(
-                    &mut trees,
-                    &mut points,
-                    true,
-                    BOUNDS,
-                );
-                unsafe {
-                    kdtree_lib::search_tree(&point, tree, &mut neighbors);
-                    render(&mut gl, &args, &point, &trees, &mut neighbors);
-                }
-                trees.clear();
-            }
-            point.x += rng.sample(uniform_walk);
-            point.y += rng.sample(uniform_walk);
-            for point in &mut points {
+            } else {
                 point.x += rng.sample(uniform_walk);
                 point.y += rng.sample(uniform_walk);
+                for point in &mut points {
+                    point.x += rng.sample(uniform_walk);
+                    point.y += rng.sample(uniform_walk);
+                }
+                counter += 1;
             }
-            counter += 1;
+            let tree: *const Tree = kdtree_lib::construct_tree(
+                &mut trees,
+                &mut points,
+                true,
+                BOUNDS,
+            );
+            unsafe {
+                kdtree_lib::search_tree(&point, tree, &mut neighbors);
+                render(&mut gl, &args, &point, &trees, &mut neighbors);
+            }
+            trees.clear();
         }
     }
 }

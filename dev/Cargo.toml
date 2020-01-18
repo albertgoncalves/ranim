@@ -18,8 +18,17 @@ debug = false
 panic = "abort"
 
 [[bin]]
+name = "growth"
+path = "src/growth.rs"
+
+[[bin]]
 name = "kdtree"
 path = "src/kdtree.rs"
+
+[[bench]]
+name = "kdtree"
+path = "src/kdtree_lib/bench.rs"
+harness = false
 
 [[bin]]
 name = "orbits"
@@ -28,11 +37,6 @@ path = "src/orbits.rs"
 [[bin]]
 name = "webs"
 path = "src/webs.rs"
-
-[[bench]]
-name = "kdtree"
-path = "src/kdtree_lib/bench.rs"
-harness = false
 
 [[bench]]
 name = "webs"

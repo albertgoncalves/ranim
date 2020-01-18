@@ -161,16 +161,16 @@ fn main() {
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
             if RELOAD_FRAME_INTERVAL < counter {
-                counter = 0;
                 for i in 0..CAPACITY {
                     xs[i] = rng.sample(uniform);
                     ys[i] = rng.sample(uniform);
                     x_speeds[i] = POINT_SPEED_INIT;
                     y_speeds[i] = POINT_SPEED_INIT;
                 }
+                counter = 0;
             } else {
-                counter += 1;
                 update(&mut xs, &mut ys, &mut x_speeds, &mut y_speeds);
+                counter += 1;
             }
             render(&mut gl, &args, &xs, &ys, &x_speeds, &y_speeds);
         }
