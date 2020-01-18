@@ -3,6 +3,7 @@ mod kdtree_lib;
 use arrayvec::ArrayVec;
 use graphics::math::Matrix2d;
 use graphics::Transformed;
+use kdtree_lib::{Bounds, Point, Tree};
 use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent};
@@ -40,12 +41,12 @@ const WALK_RNG_LOWER: f64 = -WALK_RNG_UPPER;
 
 const RELOAD_FRAME_INTERVAL: u16 = 60 * 8;
 
-const BOUNDS: kdtree_lib::Bounds = kdtree_lib::Bounds {
-    lower: kdtree_lib::Point {
+const BOUNDS: Bounds = Bounds {
+    lower: Point {
         x: WINDOW_EDGE_HALF_MINUS,
         y: WINDOW_EDGE_HALF_MINUS,
     },
-    upper: kdtree_lib::Point {
+    upper: Point {
         x: WINDOW_EDGE_HALF,
         y: WINDOW_EDGE_HALF,
     },
@@ -54,9 +55,9 @@ const BOUNDS: kdtree_lib::Bounds = kdtree_lib::Bounds {
 unsafe fn render(
     gl: &mut GlGraphics,
     args: &RenderArgs,
-    point: &kdtree_lib::Point,
-    trees: &[kdtree_lib::Tree],
-    neighbors: &mut ArrayVec<[*const kdtree_lib::Point; kdtree_lib::CAPACITY]>,
+    point: &Point,
+    trees: &[Tree],
+    neighbors: &mut ArrayVec<[*const Point; kdtree_lib::CAPACITY]>,
 ) {
     gl.draw(args.viewport(), |context, gl| {
         let [width, height]: [f64; 2] = args.window_size;
@@ -79,10 +80,10 @@ unsafe fn render(
             );
         }
         for tree in trees {
-            let point: &kdtree_lib::Point = &tree.point;
+            let point: &Point = &tree.point;
             let x: f64 = point.x;
             let y: f64 = point.y;
-            let bounds: &kdtree_lib::Bounds = &tree.bounds;
+            let bounds: &Bounds = &tree.bounds;
             let line: [f64; 4] = if tree.horizontal {
                 [x, bounds.lower.y, x, bounds.upper.y]
             } else {
@@ -129,25 +130,22 @@ fn main() {
         Uniform::new_inclusive(WALK_RNG_LOWER, WALK_RNG_UPPER);
     macro_rules! point {
         () => {
-            kdtree_lib::Point {
+            Point {
                 x: rng.sample(uniform_init),
                 y: rng.sample(uniform_init),
             }
         };
     }
-    let mut point: kdtree_lib::Point = point!();
-    let mut points: ArrayVec<[kdtree_lib::Point; kdtree_lib::CAPACITY]> =
-        ArrayVec::new();
+    let mut point: Point = point!();
+    let mut points: ArrayVec<[Point; kdtree_lib::CAPACITY]> = ArrayVec::new();
     unsafe {
         for _ in 0..kdtree_lib::CAPACITY {
             points.push_unchecked(point!());
         }
     }
-    let mut trees: ArrayVec<[kdtree_lib::Tree; kdtree_lib::CAPACITY]> =
+    let mut trees: ArrayVec<[Tree; kdtree_lib::CAPACITY]> = ArrayVec::new();
+    let mut neighbors: ArrayVec<[*const Point; kdtree_lib::CAPACITY]> =
         ArrayVec::new();
-    let mut neighbors: ArrayVec<
-        [*const kdtree_lib::Point; kdtree_lib::CAPACITY],
-    > = ArrayVec::new();
     let mut counter: u16 = 0;
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
@@ -160,7 +158,7 @@ fn main() {
                 counter = 0;
             }
             {
-                let tree: *const kdtree_lib::Tree = kdtree_lib::construct_tree(
+                let tree: *const Tree = kdtree_lib::construct_tree(
                     &mut trees,
                     &mut points,
                     true,
