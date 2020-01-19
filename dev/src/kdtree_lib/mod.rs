@@ -2,11 +2,45 @@ use arrayvec::ArrayVec;
 use std::ptr;
 use std::slice;
 
+pub const WINDOW_EDGE: f64 = 800.0;
+pub const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
+pub const WINDOW_EDGE_HALF_MINUS: f64 = -WINDOW_EDGE_HALF;
+
+pub const ANTI_ALIAS: u8 = 4;
+
+pub const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
+pub const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
+pub const RED: [f32; 4] = [0.92, 0.47, 0.47, 0.75];
+pub const TEAL: [f32; 4] = [0.17, 0.82, 0.76, 0.15];
+
+pub const LINE_WIDTH: f64 = 1.15;
+pub const RADIUS: f64 = 6.0;
+pub const RADIUS_2: f64 = RADIUS * 2.0;
+pub const RADIUS_4: f64 = RADIUS * 4.0;
+
+pub const RELOAD_FRAME_INTERVAL: u16 = 60 * 8;
+
 pub const CAPACITY: usize = 100;
 
 pub const SEARCH_RADIUS: f64 = 150.0;
 pub const SEARCH_RADIUS_2: f64 = SEARCH_RADIUS * 2.0;
 const SEARCH_RADIUS_SQUARED: f64 = SEARCH_RADIUS * SEARCH_RADIUS;
+
+pub const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF - 50.0;
+pub const POINT_RNG_LOWER: f64 = -POINT_RNG_UPPER;
+pub const WALK_RNG_UPPER: f64 = 0.35;
+pub const WALK_RNG_LOWER: f64 = -WALK_RNG_UPPER;
+
+pub const BOUNDS: Bounds = Bounds {
+    lower: Point {
+        x: WINDOW_EDGE_HALF_MINUS,
+        y: WINDOW_EDGE_HALF_MINUS,
+    },
+    upper: Point {
+        x: WINDOW_EDGE_HALF,
+        y: WINDOW_EDGE_HALF,
+    },
+};
 
 #[derive(Clone, PartialEq)]
 pub struct Point {

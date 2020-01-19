@@ -3,10 +3,47 @@ use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
 
+pub const WINDOW_EDGE: f64 = 800.0;
+pub const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
+pub const WINDOW_EDGE_HALF_MINUS: f64 = -WINDOW_EDGE_HALF;
+
+pub const ANTI_ALIAS: u8 = 4;
+
+pub const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
+pub const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
+pub const CYAN: [f32; 4] = [0.5, 1.0, 0.87, 0.5];
+
+pub const LINE_WIDTH: f64 = 1.15;
+pub const RADIUS: f64 = 4.0;
+pub const RADIUS_2: f64 = RADIUS * 2.0;
+pub const RADIUS_4: f64 = RADIUS * 4.0;
+
 pub const CAPACITY: usize = 512;
 pub const NODES_CAP_LIMIT: usize = CAPACITY - 1;
 const NODES_INIT: usize = 3;
 const NODES_INIT_LIMIT: usize = NODES_INIT - 1;
+
+pub const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF / 3.0;
+pub const POINT_RNG_LOWER: f64 = -POINT_RNG_UPPER;
+pub const WALK_RNG_UPPER: f64 = 0.15;
+pub const WALK_RNG_LOWER: f64 = -WALK_RNG_UPPER;
+
+pub const NEIGHBOR_RADIUS_SQUARED: f64 = 1000.0;
+pub const SEARCH_RADIUS_SQUARED: f64 = 2000.0;
+
+pub const DRAG_ATTRACT: f64 = 35.0;
+pub const DRAG_REJECT: f64 = 25.0;
+
+pub const BOUNDS: Bounds = Bounds {
+    lower: Point {
+        x: WINDOW_EDGE_HALF_MINUS,
+        y: WINDOW_EDGE_HALF_MINUS,
+    },
+    upper: Point {
+        x: WINDOW_EDGE_HALF,
+        y: WINDOW_EDGE_HALF,
+    },
+};
 
 #[derive(Clone, PartialEq)]
 pub struct Point {

@@ -15,34 +15,6 @@ use sdl2_window::Sdl2Window;
 use std::io;
 use std::io::Write;
 
-const WINDOW_EDGE: f64 = 800.0;
-const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
-const WINDOW_EDGE_HALF_MINUS: f64 = -WINDOW_EDGE_HALF;
-
-const ANTI_ALIAS: u8 = 4;
-
-const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
-const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
-const CYAN: [f32; 4] = [0.5, 1.0, 0.87, 1.0];
-const TEAL: [f32; 4] = [0.17, 0.82, 0.76, 0.15];
-
-const LINE_WIDTH: f64 = 0.8;
-const RADIUS: f64 = 3.5;
-const RADIUS_2: f64 = RADIUS * 2.0;
-const RECT_PAD: f64 = 17.5;
-const RECT_PAD_2: f64 = RECT_PAD * 2.0;
-
-const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF;
-const POINT_RNG_LOWER: f64 = WINDOW_EDGE_HALF_MINUS;
-
-const POINT_DRAG: f64 = 0.0025;
-const NEIGHBOR_DISTANCE_SQUARED: f64 = 100.0;
-
-const NODES_LIMIT: usize = webs_lib::NODES_CAP - 2;
-const EDGES_LIMIT: usize = webs_lib::EDGES_CAP - 3;
-
-const INSERT_FRAME_INTERVAL: u16 = 10;
-
 struct Rect {
     x: f64,
     y: f64,
@@ -83,39 +55,49 @@ unsafe fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
         let [width, height]: [f64; 2] = args.window_size;
         let transform: Matrix2d =
             context.transform.trans(width / 2.0, height / 2.0);
-        graphics::clear(DARK_GRAY, gl);
+        graphics::clear(webs_lib::DARK_GRAY, gl);
         {
             let edge: &Edge = &edges[n];
             let a: &Point = &(*edge.a).point;
             let b: &Point = &(*edge.b).point;
             let rect: Rect = make_rect(a, b);
             graphics::rectangle(
-                TEAL,
+                webs_lib::TEAL,
                 [
-                    rect.x - RECT_PAD,
-                    rect.y - RECT_PAD,
-                    rect.width + RECT_PAD_2,
-                    rect.height + RECT_PAD_2,
+                    rect.x - webs_lib::RECT_PAD,
+                    rect.y - webs_lib::RECT_PAD,
+                    rect.width + webs_lib::RECT_PAD_2,
+                    rect.height + webs_lib::RECT_PAD_2,
                 ],
                 transform,
                 gl,
             );
             graphics::line(
-                CYAN,
-                LINE_WIDTH,
+                webs_lib::CYAN,
+                webs_lib::LINE_WIDTH,
                 [a.x, a.y, b.x, b.y],
                 transform,
                 gl,
             );
             graphics::ellipse(
-                CYAN,
-                [a.x - RADIUS, a.y - RADIUS, RADIUS_2, RADIUS_2],
+                webs_lib::CYAN,
+                [
+                    a.x - webs_lib::RADIUS,
+                    a.y - webs_lib::RADIUS,
+                    webs_lib::RADIUS_2,
+                    webs_lib::RADIUS_2,
+                ],
                 transform,
                 gl,
             );
             graphics::ellipse(
-                CYAN,
-                [b.x - RADIUS, b.y - RADIUS, RADIUS_2, RADIUS_2],
+                webs_lib::CYAN,
+                [
+                    b.x - webs_lib::RADIUS,
+                    b.y - webs_lib::RADIUS,
+                    webs_lib::RADIUS_2,
+                    webs_lib::RADIUS_2,
+                ],
                 transform,
                 gl,
             );
@@ -124,8 +106,8 @@ unsafe fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
             let a: &Point = &(*edge.a).point;
             let b: &Point = &(*edge.b).point;
             graphics::line(
-                LIGHT_GRAY,
-                LINE_WIDTH,
+                webs_lib::LIGHT_GRAY,
+                webs_lib::LINE_WIDTH,
                 [a.x, a.y, b.x, b.y],
                 transform,
                 gl,
@@ -136,19 +118,23 @@ unsafe fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
 
 fn main() {
     let opengl: OpenGL = OpenGL::V3_2;
-    let mut window: Sdl2Window =
-        WindowSettings::new("ranim", [WINDOW_EDGE, WINDOW_EDGE])
-            .graphics_api(opengl)
-            .exit_on_esc(true)
-            .samples(ANTI_ALIAS)
-            .vsync(true)
-            .build()
-            .unwrap();
+    let mut window: Sdl2Window = WindowSettings::new(
+        "ranim",
+        [webs_lib::WINDOW_EDGE, webs_lib::WINDOW_EDGE],
+    )
+    .graphics_api(opengl)
+    .exit_on_esc(true)
+    .samples(webs_lib::ANTI_ALIAS)
+    .vsync(true)
+    .build()
+    .unwrap();
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();
-    let uniform: Uniform<f64> =
-        Uniform::new_inclusive(POINT_RNG_LOWER, POINT_RNG_UPPER);
+    let uniform: Uniform<f64> = Uniform::new_inclusive(
+        webs_lib::POINT_RNG_LOWER,
+        webs_lib::POINT_RNG_UPPER,
+    );
     let mut nodes: ArrayVec<[Node; webs_lib::NODES_CAP]> = ArrayVec::new();
     let mut edges: ArrayVec<[Edge; webs_lib::EDGES_CAP]> = ArrayVec::new();
     let mut counter: u16 = 0;
@@ -158,11 +144,13 @@ fn main() {
         webs_lib::init(&mut rng, &uniform, &mut nodes, &mut edges);
         while let Some(event) = events.next(&mut window) {
             if let Some(args) = event.render_args() {
-                if (NODES_LIMIT < nodes.len()) || (EDGES_LIMIT < edges.len()) {
+                if (webs_lib::NODES_LIMIT < nodes.len())
+                    || (webs_lib::EDGES_LIMIT < edges.len())
+                {
                     nodes.clear();
                     edges.clear();
                     webs_lib::init(&mut rng, &uniform, &mut nodes, &mut edges);
-                } else if INSERT_FRAME_INTERVAL < counter {
+                } else if webs_lib::INSERT_FRAME_INTERVAL < counter {
                     webs_lib::insert(
                         &mut rng, &uniform, &mut nodes, &mut edges,
                     );
@@ -170,8 +158,8 @@ fn main() {
                 }
                 webs_lib::update(
                     &mut nodes,
-                    NEIGHBOR_DISTANCE_SQUARED,
-                    POINT_DRAG,
+                    webs_lib::NEIGHBOR_DISTANCE_SQUARED,
+                    webs_lib::POINT_DRAG,
                 );
                 render(&mut gl, &args, &edges);
                 frames += 1;

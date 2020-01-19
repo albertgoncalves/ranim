@@ -3,6 +3,25 @@ use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
 
+pub const WINDOW_EDGE: f64 = 800.0;
+pub const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
+pub const WINDOW_EDGE_HALF_MINUS: f64 = -WINDOW_EDGE_HALF;
+
+pub const ANTI_ALIAS: u8 = 4;
+
+pub const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
+pub const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
+pub const CYAN: [f32; 4] = [0.5, 1.0, 0.87, 1.0];
+pub const TEAL: [f32; 4] = [0.17, 0.82, 0.76, 0.15];
+
+pub const LINE_WIDTH: f64 = 0.8;
+pub const RADIUS: f64 = 3.5;
+pub const RADIUS_2: f64 = RADIUS * 2.0;
+pub const RECT_PAD: f64 = 17.5;
+pub const RECT_PAD_2: f64 = RECT_PAD * 2.0;
+
+pub const INSERT_FRAME_INTERVAL: u16 = 10;
+
 pub const NODES_CAP: usize = 1024;
 pub const EDGES_CAP: usize = 1024;
 
@@ -11,6 +30,15 @@ const EDGES_INIT: usize = 1;
 
 const NEIGHBORS_CAP: usize = 3;
 const INTERSECTIONS_CAP: usize = 16;
+
+pub const NODES_LIMIT: usize = NODES_CAP - 2;
+pub const EDGES_LIMIT: usize = EDGES_CAP - 3;
+
+pub const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF;
+pub const POINT_RNG_LOWER: f64 = WINDOW_EDGE_HALF_MINUS;
+
+pub const POINT_DRAG: f64 = 0.0025;
+pub const NEIGHBOR_DISTANCE_SQUARED: f64 = 100.0;
 
 pub struct Point {
     pub x: f64,
