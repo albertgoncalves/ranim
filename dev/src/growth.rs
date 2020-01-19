@@ -36,7 +36,16 @@ const POINT_RNG_LOWER: f64 = -POINT_RNG_UPPER;
 const WALK_RNG_UPPER: f64 = 0.15;
 const WALK_RNG_LOWER: f64 = -WALK_RNG_UPPER;
 
-const RELOAD_FRAME_INTERVAL: u16 = 60 * 8;
+const BOUNDS: growth_lib::Bounds = growth_lib::Bounds {
+    lower: Point {
+        x: WINDOW_EDGE_HALF_MINUS,
+        y: WINDOW_EDGE_HALF_MINUS,
+    },
+    upper: Point {
+        x: WINDOW_EDGE_HALF,
+        y: WINDOW_EDGE_HALF,
+    },
+};
 
 fn render(gl: &mut GlGraphics, args: &RenderArgs, nodes: &[Node]) {
     gl.draw(args.viewport(), |context, gl| {
@@ -83,25 +92,36 @@ fn main() {
         Uniform::new_inclusive(POINT_RNG_LOWER, POINT_RNG_UPPER);
     let uniform_walk: Uniform<f64> =
         Uniform::new_inclusive(WALK_RNG_LOWER, WALK_RNG_UPPER);
-    let mut nodes: ArrayVec<[Node; growth_lib::NODES_CAP]> = ArrayVec::new();
-    growth_lib::init(&mut rng, &uniform_init, &mut nodes);
-    let mut counter: u16 = 0;
+    let mut nodes: ArrayVec<[Node; growth_lib::CAPACITY]> = ArrayVec::new();
+    growth_lib::init_nodes(&mut rng, &uniform_init, &mut nodes);
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
-            if RELOAD_FRAME_INTERVAL < counter {
+            if growth_lib::NODES_CAP_LIMIT < nodes.len() {
                 nodes.clear();
-                growth_lib::init(&mut rng, &uniform_init, &mut nodes);
-                counter = 0;
+                growth_lib::init_nodes(&mut rng, &uniform_init, &mut nodes);
             } else {
                 for node in &mut nodes {
                     node.point.x += rng.sample(uniform_walk);
                     node.point.y += rng.sample(uniform_walk);
                 }
-                let index: usize = rng.gen_range(0, nodes.len() - 1);
-                growth_lib::insert(&mut nodes, index);
+                let mut index: Option<usize> = None;
+                for i in 0..nodes.len() {
+                    if growth_lib::NEIGHBOR_DISTANCE_SQUARED
+                        < growth_lib::squared_distance(
+                            &nodes[i].point,
+                            &nodes[nodes[i].right_index].point,
+                        )
+                    {
+                        index = Some(i);
+                        break;
+                    }
+                }
+                if let Some(i) = index {
+                    growth_lib::insert_node(&mut nodes, i);
+                }
             }
+            growth_lib::update_nodes(&mut nodes, BOUNDS);
             render(&mut gl, &args, &nodes);
-            counter += 1;
         }
     }
 }
