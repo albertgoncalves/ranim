@@ -3,7 +3,7 @@ mod growth_lib;
 use arrayvec::ArrayVec;
 use graphics::math::Matrix2d;
 use graphics::Transformed;
-use growth_lib::Point;
+use growth_lib::{Node, Point};
 use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent};
@@ -27,6 +27,7 @@ const ANTI_ALIAS: u8 = 4;
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
 const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
 
+const LINE_WIDTH: f64 = 1.15;
 const RADIUS: f64 = 3.0;
 const RADIUS_2: f64 = RADIUS * 2.0;
 
@@ -37,22 +38,30 @@ const WALK_RNG_LOWER: f64 = -WALK_RNG_UPPER;
 
 const RELOAD_FRAME_INTERVAL: u16 = 60 * 8;
 
-fn render(gl: &mut GlGraphics, args: &RenderArgs, points: &[Point]) {
+fn render(gl: &mut GlGraphics, args: &RenderArgs, nodes: &[Node]) {
     gl.draw(args.viewport(), |context, gl| {
         let [width, height]: [f64; 2] = args.window_size;
         let transform: Matrix2d =
             context.transform.trans(width / 2.0, height / 2.0);
         graphics::clear(LIGHT_GRAY, gl);
         graphics::rectangle(DARK_GRAY, WINDOW_RECT, transform, gl);
-        for point in points {
-            let x: f64 = point.x;
-            let y: f64 = point.y;
+        for node in nodes {
+            let x: f64 = node.point.x;
+            let y: f64 = node.point.y;
             graphics::ellipse(
                 LIGHT_GRAY,
                 [x - RADIUS, y - RADIUS, RADIUS_2, RADIUS_2],
                 transform,
                 gl,
             );
+            let left: &Point = &nodes[node.left_index].point;
+            graphics::line(
+                LIGHT_GRAY,
+                LINE_WIDTH,
+                [left.x, left.y, x, y],
+                transform,
+                gl,
+            )
         }
     })
 }
@@ -74,23 +83,24 @@ fn main() {
         Uniform::new_inclusive(POINT_RNG_LOWER, POINT_RNG_UPPER);
     let uniform_walk: Uniform<f64> =
         Uniform::new_inclusive(WALK_RNG_LOWER, WALK_RNG_UPPER);
-    let mut points: ArrayVec<[Point; growth_lib::POINTS_CAP]> =
-        ArrayVec::new();
-    growth_lib::init(&mut rng, &uniform_init, &mut points);
+    let mut nodes: ArrayVec<[Node; growth_lib::NODES_CAP]> = ArrayVec::new();
+    growth_lib::init(&mut rng, &uniform_init, &mut nodes);
     let mut counter: u16 = 0;
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
             if RELOAD_FRAME_INTERVAL < counter {
-                points.clear();
-                growth_lib::init(&mut rng, &uniform_init, &mut points);
+                nodes.clear();
+                growth_lib::init(&mut rng, &uniform_init, &mut nodes);
                 counter = 0;
             } else {
-                for point in &mut points {
-                    point.x += rng.sample(uniform_walk);
-                    point.y += rng.sample(uniform_walk);
+                for node in &mut nodes {
+                    node.point.x += rng.sample(uniform_walk);
+                    node.point.y += rng.sample(uniform_walk);
                 }
+                let index: usize = rng.gen_range(0, nodes.len() - 1);
+                growth_lib::insert(&mut nodes, index);
             }
-            render(&mut gl, &args, &points);
+            render(&mut gl, &args, &nodes);
             counter += 1;
         }
     }
