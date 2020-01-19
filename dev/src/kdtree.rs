@@ -128,7 +128,7 @@ fn main() {
         Uniform::new_inclusive(POINT_RNG_LOWER, POINT_RNG_UPPER);
     let uniform_walk: Uniform<f64> =
         Uniform::new_inclusive(WALK_RNG_LOWER, WALK_RNG_UPPER);
-    macro_rules! point {
+    macro_rules! make_point {
         () => {
             Point {
                 x: rng.sample(uniform_init),
@@ -136,11 +136,11 @@ fn main() {
             }
         };
     }
-    let mut point: Point = point!();
+    let mut point: Point = make_point!();
     let mut points: ArrayVec<[Point; kdtree_lib::CAPACITY]> = ArrayVec::new();
     unsafe {
         for _ in 0..kdtree_lib::CAPACITY {
-            points.push_unchecked(point!());
+            points.push_unchecked(make_point!());
         }
     }
     let mut trees: ArrayVec<[Tree; kdtree_lib::CAPACITY]> = ArrayVec::new();
@@ -150,7 +150,7 @@ fn main() {
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
             if RELOAD_FRAME_INTERVAL < counter {
-                point = point!();
+                point = make_point!();
                 for i in 0..kdtree_lib::CAPACITY {
                     points[i].x = rng.sample(uniform_init);
                     points[i].y = rng.sample(uniform_init);
