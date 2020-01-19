@@ -159,9 +159,13 @@ fn main() {
                 }
                 counter += 1;
             }
-            let tree: *const Tree =
-                kdtree_lib::make_tree(&mut trees, &mut points, true, BOUNDS);
             unsafe {
+                let tree: *mut Tree = kdtree_lib::make_tree(
+                    &mut trees,
+                    &mut points,
+                    true,
+                    BOUNDS,
+                );
                 kdtree_lib::search_tree(&point, tree, &mut neighbors);
                 render(&mut gl, &args, &point, &trees, &mut neighbors);
             }

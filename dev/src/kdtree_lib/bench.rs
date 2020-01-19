@@ -55,7 +55,9 @@ fn make_tree(b: &mut Bencher) {
         make_points!(rng, uniform);
     b.iter(|| {
         let mut trees: ArrayVec<[Tree; r#mod::CAPACITY]> = ArrayVec::new();
-        r#mod::make_tree(&mut trees, &mut points, true, BOUNDS);
+        unsafe {
+            r#mod::make_tree(&mut trees, &mut points, true, BOUNDS);
+        }
     })
 }
 
@@ -67,13 +69,15 @@ fn search_tree(b: &mut Bencher) {
         make_points!(rng, uniform);
     let point: Point = make_point!(rng, uniform);
     let mut trees: ArrayVec<[Tree; r#mod::CAPACITY]> = ArrayVec::new();
-    let tree: *const Tree =
-        r#mod::make_tree(&mut trees, &mut points, true, BOUNDS);
-    b.iter(|| {
-        let mut neighbors: ArrayVec<[*const Point; r#mod::CAPACITY]> =
-            ArrayVec::new();
-        unsafe { r#mod::search_tree(&point, tree, &mut neighbors) }
-    })
+    unsafe {
+        let tree: *mut Tree =
+            r#mod::make_tree(&mut trees, &mut points, true, BOUNDS);
+        b.iter(|| {
+            let mut neighbors: ArrayVec<[*const Point; r#mod::CAPACITY]> =
+                ArrayVec::new();
+            r#mod::search_tree(&point, tree, &mut neighbors)
+        })
+    }
 }
 
 benchmark_group!(benches, make_tree, search_tree);
