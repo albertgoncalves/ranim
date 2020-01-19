@@ -68,7 +68,7 @@ fn make_tree(
     let upper_y: f64 = bounds.upper.y;
     let (point, left_bounds, right_bounds): (Point, Bounds, Bounds) = {
         if horizontal {
-            points.sort_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
+            points.sort_unstable_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
             let point: Point = points[median].clone();
             let x: f64 = point.x;
             (
@@ -77,7 +77,7 @@ fn make_tree(
                 make_bounds!(x, lower_y, upper_x, upper_y),
             )
         } else {
-            points.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
+            points.sort_unstable_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
             let point: Point = points[median].clone();
             let y: f64 = point.y;
             (

@@ -46,9 +46,9 @@ macro_rules! get_median {
     ($points:expr, $n:expr, $horizontal:expr $(,)?) => {{
         let median: usize = $n / 2;
         if $horizontal {
-            $points.sort_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
+            $points.sort_unstable_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
         } else {
-            $points.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
+            $points.sort_unstable_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
         }
         $points[median].clone()
     }};
