@@ -11,6 +11,8 @@ use piston::window::WindowSettings;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use sdl2_window::Sdl2Window;
+use std::io;
+use std::io::Write;
 
 const WINDOW_EDGE: f64 = 800.0;
 const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
@@ -134,10 +136,12 @@ fn main() {
         if let Some(args) = event.update_args() {
             elapsed += args.dt;
             if 1.0 < elapsed {
-                println!("{}", f64::from(frames) / elapsed);
+                print!("\r{}", f64::from(frames) / elapsed);
+                io::stdout().flush().unwrap();
                 frames = 0;
                 elapsed = 0.0;
             }
         }
     }
+    println!()
 }
