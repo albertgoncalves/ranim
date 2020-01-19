@@ -10,7 +10,6 @@ use piston::input::{RenderArgs, RenderEvent};
 use piston::window::WindowSettings;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
-use rand::Rng;
 use sdl2_window::Sdl2Window;
 
 const WINDOW_EDGE: f64 = 800.0;
@@ -26,10 +25,12 @@ const ANTI_ALIAS: u8 = 4;
 
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
 const DARK_GRAY: [f32; 4] = [0.15, 0.15, 0.15, 1.0];
+const CYAN: [f32; 4] = [0.5, 1.0, 0.87, 0.5];
 
 const LINE_WIDTH: f64 = 1.15;
-const RADIUS: f64 = 3.0;
+const RADIUS: f64 = 4.0;
 const RADIUS_2: f64 = RADIUS * 2.0;
+const RADIUS_4: f64 = RADIUS * 4.0;
 
 const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF / 3.0;
 const POINT_RNG_LOWER: f64 = -POINT_RNG_UPPER;
@@ -54,6 +55,20 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, nodes: &[Node]) {
             context.transform.trans(width / 2.0, height / 2.0);
         graphics::clear(LIGHT_GRAY, gl);
         graphics::rectangle(DARK_GRAY, WINDOW_RECT, transform, gl);
+        {
+            let node: &Node = nodes.last().unwrap();
+            graphics::ellipse(
+                CYAN,
+                [
+                    node.point.x - RADIUS_2,
+                    node.point.y - RADIUS_2,
+                    RADIUS_4,
+                    RADIUS_4,
+                ],
+                transform,
+                gl,
+            );
+        }
         for node in nodes {
             let x: f64 = node.point.x;
             let y: f64 = node.point.y;
@@ -100,27 +115,13 @@ fn main() {
                 nodes.clear();
                 growth_lib::init_nodes(&mut rng, &uniform_init, &mut nodes);
             } else {
-                for node in &mut nodes {
-                    node.point.x += rng.sample(uniform_walk);
-                    node.point.y += rng.sample(uniform_walk);
-                }
-                let mut index: Option<usize> = None;
-                for i in 0..nodes.len() {
-                    if growth_lib::NEIGHBOR_DISTANCE_SQUARED
-                        < growth_lib::squared_distance(
-                            &nodes[i].point,
-                            &nodes[nodes[i].right_index].point,
-                        )
-                    {
-                        index = Some(i);
-                        break;
-                    }
-                }
-                if let Some(i) = index {
-                    growth_lib::insert_node(&mut nodes, i);
-                }
+                growth_lib::update_nodes(
+                    &mut rng,
+                    &uniform_walk,
+                    &mut nodes,
+                    BOUNDS,
+                );
             }
-            growth_lib::update_nodes(&mut nodes, BOUNDS);
             render(&mut gl, &args, &nodes);
         }
     }
