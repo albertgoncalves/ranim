@@ -12,12 +12,7 @@ use sdl2_window::Sdl2Window;
 const WINDOW_EDGE: f64 = 800.0;
 const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
 const WINDOW_EDGE_HALF_MINUS: f64 = -WINDOW_EDGE_HALF;
-const WINDOW_RECT: [f64; 4] = [
-    WINDOW_EDGE_HALF_MINUS,
-    WINDOW_EDGE_HALF_MINUS,
-    WINDOW_EDGE,
-    WINDOW_EDGE,
-];
+
 const ANTI_ALIAS: u8 = 4;
 
 const LIGHT_GRAY: [f32; 4] = [0.95, 0.95, 0.95, 1.0];
@@ -82,8 +77,7 @@ fn render(
         let [width, height]: [f64; 2] = args.window_size;
         let transform: Matrix2d =
             context.transform.trans(width / 2.0, height / 2.0);
-        graphics::clear(LIGHT_GRAY, gl);
-        graphics::rectangle(DARK_GRAY, WINDOW_RECT, transform, gl);
+        graphics::clear(DARK_GRAY, gl);
         {
             let x: f64 = xs[CAPACITY_MINUS_1];
             let y: f64 = ys[CAPACITY_MINUS_1];

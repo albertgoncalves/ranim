@@ -12,7 +12,6 @@ const EDGES_INIT: usize = 1;
 const NEIGHBORS_CAP: usize = 3;
 const INTERSECTIONS_CAP: usize = 16;
 
-#[derive(PartialEq)]
 pub struct Point {
     pub x: f64,
     pub y: f64,

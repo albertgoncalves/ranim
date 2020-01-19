@@ -8,7 +8,7 @@ pub const NODES_CAP_LIMIT: usize = CAPACITY - 1;
 const NODES_INIT: usize = 3;
 const NODES_INIT_LIMIT: usize = NODES_INIT - 1;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
@@ -236,6 +236,7 @@ pub fn update_nodes(
         points.push(node.point.clone());
     }
     let mut trees: ArrayVec<[Tree; CAPACITY]> = ArrayVec::new();
+    let mut neighbors: ArrayVec<[TreeIndex; CAPACITY]> = ArrayVec::new();
     if let Some(index) = make_tree(&mut trees, &mut points, true, bounds) {
         let mut next_points: ArrayVec<[(usize, Point); CAPACITY]> =
             ArrayVec::new();
@@ -251,8 +252,6 @@ pub fn update_nodes(
                     + ((((left_point.y + right_point.y) / 2.0) - point.y)
                         / drag_attract),
             };
-            let mut neighbors: ArrayVec<[TreeIndex; CAPACITY]> =
-                ArrayVec::new();
             search_tree(
                 point,
                 &trees,
@@ -264,8 +263,8 @@ pub fn update_nodes(
             if 0 < n {
                 let mut x: f64 = 0.0;
                 let mut y: f64 = 0.0;
-                for neighbor_index in &neighbors {
-                    let neighbor_point: &Point = &trees[*neighbor_index].point;
+                for neighbor_index in neighbors.drain(..n) {
+                    let neighbor_point: &Point = &trees[neighbor_index].point;
                     x += point.x - neighbor_point.x;
                     y += point.y - neighbor_point.y;
                 }
