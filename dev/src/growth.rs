@@ -37,6 +37,12 @@ const POINT_RNG_LOWER: f64 = -POINT_RNG_UPPER;
 const WALK_RNG_UPPER: f64 = 0.15;
 const WALK_RNG_LOWER: f64 = -WALK_RNG_UPPER;
 
+const NEIGHBOR_RADIUS_SQUARED: f64 = 1000.0;
+const SEARCH_RADIUS_SQUARED: f64 = 2000.0;
+
+const DRAG_ATTRACT: f64 = 35.0;
+const DRAG_REJECT: f64 = 25.0;
+
 const BOUNDS: growth_lib::Bounds = growth_lib::Bounds {
     lower: Point {
         x: WINDOW_EDGE_HALF_MINUS,
@@ -120,6 +126,10 @@ fn main() {
                     &uniform_walk,
                     &mut nodes,
                     BOUNDS,
+                    NEIGHBOR_RADIUS_SQUARED,
+                    SEARCH_RADIUS_SQUARED,
+                    DRAG_ATTRACT,
+                    DRAG_REJECT,
                 );
             }
             render(&mut gl, &args, &nodes);

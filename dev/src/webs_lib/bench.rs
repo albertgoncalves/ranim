@@ -11,8 +11,15 @@ use r#mod::{Edge, Node};
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 
-const POINT_RNG_UPPER: f64 = 1.0;
-const POINT_RNG_LOWER: f64 = 0.0;
+const WINDOW_EDGE: f64 = 800.0;
+const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
+const WINDOW_EDGE_HALF_MINUS: f64 = -WINDOW_EDGE_HALF;
+
+const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF;
+const POINT_RNG_LOWER: f64 = WINDOW_EDGE_HALF_MINUS;
+
+const POINT_DRAG: f64 = 0.0025;
+const NEIGHBOR_DISTANCE_SQUARED: f64 = 100.0;
 
 fn init_insert_update(b: &mut Bencher) {
     let mut rng: ThreadRng = rand::thread_rng();
@@ -24,7 +31,7 @@ fn init_insert_update(b: &mut Bencher) {
         unsafe {
             r#mod::init(&mut rng, &uniform, &mut nodes, &mut edges);
             r#mod::insert(&mut rng, &uniform, &mut nodes, &mut edges);
-            r#mod::update(&mut nodes);
+            r#mod::update(&mut nodes, NEIGHBOR_DISTANCE_SQUARED, POINT_DRAG);
         };
     })
 }

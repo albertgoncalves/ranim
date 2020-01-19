@@ -3,9 +3,6 @@ use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
 
-const POINT_DRAG: f64 = 0.0025;
-const NEIGHBOR_DISTANCE_SQUARED: f64 = 100.0;
-
 pub const NODES_CAP: usize = 1024;
 pub const EDGES_CAP: usize = 1024;
 
@@ -217,7 +214,11 @@ fn squared_distance(a: &Point, b: &Point) -> f64 {
     (x * x) + (y * y)
 }
 
-pub unsafe fn update(nodes: &mut ArrayVec<[Node; NODES_CAP]>) {
+pub unsafe fn update(
+    nodes: &mut ArrayVec<[Node; NODES_CAP]>,
+    neighbor_distance_squared: f64,
+    point_drag: f64,
+) {
     let mut updates: ArrayVec<[(usize, Point); NODES_CAP]> = ArrayVec::new();
     for i in NODES_INIT..nodes.len() {
         let node: &Node = nodes.get_unchecked(i);
@@ -229,7 +230,7 @@ pub unsafe fn update(nodes: &mut ArrayVec<[Node; NODES_CAP]>) {
         let mut update_y: f64 = 0.0;
         for neighbor in &node.neighbors {
             let neighbor_point: &Point = &(**neighbor).point;
-            if NEIGHBOR_DISTANCE_SQUARED
+            if neighbor_distance_squared
                 < squared_distance(node_point, neighbor_point)
             {
                 n += 1.0;
@@ -241,8 +242,8 @@ pub unsafe fn update(nodes: &mut ArrayVec<[Node; NODES_CAP]>) {
             updates.push_unchecked((
                 i,
                 Point {
-                    x: node_x - ((update_x / n) * POINT_DRAG),
-                    y: node_y - ((update_y / n) * POINT_DRAG),
+                    x: node_x - ((update_x / n) * point_drag),
+                    y: node_y - ((update_y / n) * point_drag),
                 },
             ));
         }

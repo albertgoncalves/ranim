@@ -21,6 +21,11 @@ panic = "abort"
 name = "growth"
 path = "src/growth.rs"
 
+[[bench]]
+name = "growth"
+path = "src/growth_lib/bench.rs"
+harness = false
+
 [[bin]]
 name = "kdtree"
 path = "src/kdtree.rs"

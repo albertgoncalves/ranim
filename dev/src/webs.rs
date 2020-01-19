@@ -38,6 +38,9 @@ const RECT_PAD_2: f64 = RECT_PAD * 2.0;
 const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF;
 const POINT_RNG_LOWER: f64 = WINDOW_EDGE_HALF_MINUS;
 
+const POINT_DRAG: f64 = 0.0025;
+const NEIGHBOR_DISTANCE_SQUARED: f64 = 100.0;
+
 const NODES_LIMIT: usize = webs_lib::NODES_CAP - 2;
 const EDGES_LIMIT: usize = webs_lib::EDGES_CAP - 3;
 
@@ -167,7 +170,11 @@ fn main() {
                     );
                     counter = 0;
                 }
-                webs_lib::update(&mut nodes);
+                webs_lib::update(
+                    &mut nodes,
+                    NEIGHBOR_DISTANCE_SQUARED,
+                    POINT_DRAG,
+                );
                 render(&mut gl, &args, &edges);
                 counter += 1;
             }
