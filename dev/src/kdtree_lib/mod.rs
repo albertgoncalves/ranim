@@ -108,23 +108,28 @@ pub unsafe fn search_tree(
     tree: *const Tree,
     neighbors: &mut ArrayVec<[*const Point; CAPACITY]>,
 ) {
-    let bounds: &Bounds = &(*tree).bounds;
-    let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
-    let y: f64 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
-    if ((x * x) + (y * y)) < SEARCH_RADIUS_SQUARED {
-        let neighbor: &Point = &(*tree).point;
-        if (point != neighbor)
-            && (squared_distance(point, neighbor) < SEARCH_RADIUS_SQUARED)
-        {
-            neighbors.push_unchecked(neighbor);
-        }
-        let left: *const Tree = (*tree).left;
-        if !left.is_null() {
-            search_tree(point, left, neighbors);
-        }
-        let right: *const Tree = (*tree).right;
-        if !right.is_null() {
-            search_tree(point, right, neighbors);
+    let mut stack: ArrayVec<[*const Tree; CAPACITY]> = ArrayVec::new();
+    stack.push(tree);
+    while 0 < stack.len() {
+        let tree: *const Tree = stack.pop().unwrap();
+        let bounds: &Bounds = &(*tree).bounds;
+        let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
+        let y: f64 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
+        if ((x * x) + (y * y)) < SEARCH_RADIUS_SQUARED {
+            let neighbor: &Point = &(*tree).point;
+            if (point != neighbor)
+                && (squared_distance(point, neighbor) < SEARCH_RADIUS_SQUARED)
+            {
+                neighbors.push_unchecked(neighbor);
+            }
+            let left: *const Tree = (*tree).left;
+            if !left.is_null() {
+                stack.push(left);
+            }
+            let right: *const Tree = (*tree).right;
+            if !right.is_null() {
+                stack.push(right);
+            }
         }
     }
 }

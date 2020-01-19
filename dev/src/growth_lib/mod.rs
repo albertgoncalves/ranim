@@ -123,33 +123,26 @@ fn search_tree(
     neighbors: &mut ArrayVec<[TreeIndex; CAPACITY]>,
     search_radius_squared: f64,
 ) {
-    let tree: &Tree = &trees[index];
-    if bounds_to_point_squared_distance(&tree.bounds, point)
-        < search_radius_squared
-    {
-        let neighbor: &Point = &tree.point;
-        if (point != neighbor)
-            && (squared_distance(point, neighbor) < search_radius_squared)
+    let mut stack: ArrayVec<[TreeIndex; CAPACITY]> = ArrayVec::new();
+    stack.push(index);
+    while 0 < stack.len() {
+        let index: TreeIndex = stack.pop().unwrap();
+        let tree: &Tree = &trees[index];
+        if bounds_to_point_squared_distance(&tree.bounds, point)
+            < search_radius_squared
         {
-            neighbors.push(index);
-        }
-        if let Some(left_index) = tree.left_index {
-            search_tree(
-                point,
-                trees,
-                left_index,
-                neighbors,
-                search_radius_squared,
-            );
-        }
-        if let Some(right_index) = tree.right_index {
-            search_tree(
-                point,
-                trees,
-                right_index,
-                neighbors,
-                search_radius_squared,
-            );
+            let neighbor: &Point = &tree.point;
+            if (point != neighbor)
+                && (squared_distance(point, neighbor) < search_radius_squared)
+            {
+                neighbors.push(index);
+            }
+            if let Some(left_index) = tree.left_index {
+                stack.push(left_index);
+            }
+            if let Some(right_index) = tree.right_index {
+                stack.push(right_index);
+            }
         }
     }
 }
