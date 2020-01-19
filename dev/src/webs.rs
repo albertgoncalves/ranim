@@ -7,7 +7,7 @@ use graphics::math::Matrix2d;
 use graphics::Transformed;
 use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::{EventSettings, Events};
-use piston::input::{RenderArgs, RenderEvent};
+use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
 use piston::window::WindowSettings;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
@@ -150,6 +150,8 @@ fn main() {
     let mut nodes: ArrayVec<[Node; webs_lib::NODES_CAP]> = ArrayVec::new();
     let mut edges: ArrayVec<[Edge; webs_lib::EDGES_CAP]> = ArrayVec::new();
     let mut counter: u16 = 0;
+    let mut frames: u16 = 0;
+    let mut elapsed: f64 = 0.0;
     unsafe {
         webs_lib::init(&mut rng, &uniform, &mut nodes, &mut edges);
         while let Some(event) = events.next(&mut window) {
@@ -170,7 +172,16 @@ fn main() {
                     POINT_DRAG,
                 );
                 render(&mut gl, &args, &edges);
+                frames += 1;
                 counter += 1;
+            }
+            if let Some(args) = event.update_args() {
+                elapsed += args.dt;
+                if 1.0 < elapsed {
+                    println!("{}", f64::from(frames) / elapsed);
+                    frames = 0;
+                    elapsed = 0.0;
+                }
             }
         }
     }
