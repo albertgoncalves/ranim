@@ -51,53 +51,6 @@ struct Tree {
     right_index: Option<TreeIndex>,
 }
 
-pub fn init_nodes(
-    rng: &mut ThreadRng,
-    uniform: &Uniform<f64>,
-    nodes: &mut ArrayVec<[Node; CAPACITY]>,
-) {
-    for i in 0..NODES_INIT {
-        let (left_index, right_index): (NodeIndex, NodeIndex) = {
-            if i == 0 {
-                (NODES_INIT_LIMIT, i + 1)
-            } else if i == NODES_INIT_LIMIT {
-                (i - 1, 0)
-            } else {
-                (i - 1, i + 1)
-            }
-        };
-        nodes.push(Node {
-            point: Point {
-                x: rng.sample(uniform),
-                y: rng.sample(uniform),
-            },
-            left_index,
-            right_index,
-        });
-    }
-}
-
-fn insert_node(nodes: &mut ArrayVec<[Node; CAPACITY]>, left_index: NodeIndex) {
-    let index: usize = nodes.len();
-    let right_index: NodeIndex = nodes[left_index].right_index;
-    let left_point: &Point = &nodes[left_index].point;
-    let right_point: &Point = &nodes[right_index].point;
-    let left_x: f64 = left_point.x;
-    let left_y: f64 = left_point.y;
-    let right_x: f64 = right_point.x;
-    let right_y: f64 = right_point.y;
-    nodes.push(Node {
-        point: Point {
-            x: (left_x + right_x) / 2.0,
-            y: (left_y + right_y) / 2.0,
-        },
-        left_index,
-        right_index,
-    });
-    nodes[left_index].right_index = index;
-    nodes[right_index].left_index = index;
-}
-
 fn make_tree(
     trees: &mut ArrayVec<[Tree; CAPACITY]>,
     points: &mut [Point],
@@ -199,6 +152,53 @@ fn search_tree(
             );
         }
     }
+}
+
+pub fn init_nodes(
+    rng: &mut ThreadRng,
+    uniform: &Uniform<f64>,
+    nodes: &mut ArrayVec<[Node; CAPACITY]>,
+) {
+    for i in 0..NODES_INIT {
+        let (left_index, right_index): (NodeIndex, NodeIndex) = {
+            if i == 0 {
+                (NODES_INIT_LIMIT, i + 1)
+            } else if i == NODES_INIT_LIMIT {
+                (i - 1, 0)
+            } else {
+                (i - 1, i + 1)
+            }
+        };
+        nodes.push(Node {
+            point: Point {
+                x: rng.sample(uniform),
+                y: rng.sample(uniform),
+            },
+            left_index,
+            right_index,
+        });
+    }
+}
+
+fn insert_node(nodes: &mut ArrayVec<[Node; CAPACITY]>, left_index: NodeIndex) {
+    let index: usize = nodes.len();
+    let right_index: NodeIndex = nodes[left_index].right_index;
+    let left_point: &Point = &nodes[left_index].point;
+    let right_point: &Point = &nodes[right_index].point;
+    let left_x: f64 = left_point.x;
+    let left_y: f64 = left_point.y;
+    let right_x: f64 = right_point.x;
+    let right_y: f64 = right_point.y;
+    nodes.push(Node {
+        point: Point {
+            x: (left_x + right_x) / 2.0,
+            y: (left_y + right_y) / 2.0,
+        },
+        left_index,
+        right_index,
+    });
+    nodes[left_index].right_index = index;
+    nodes[right_index].left_index = index;
 }
 
 #[allow(clippy::cast_precision_loss, clippy::too_many_arguments)]
