@@ -1,6 +1,6 @@
 mod webs_lib;
 
-use webs_lib::{Edge, Node, Point, Rect};
+use webs_lib::{Edge, Node, Point};
 
 use arrayvec::ArrayVec;
 use graphics::math::Matrix2d;
@@ -43,6 +43,40 @@ const EDGES_LIMIT: usize = webs_lib::EDGES_CAP - 3;
 
 const INSERT_FRAME_INTERVAL: u16 = 10;
 
+struct Rect {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+fn make_rect(a: &webs_lib::Point, b: &webs_lib::Point) -> Rect {
+    let x1: f64 = a.x;
+    let x2: f64 = b.x;
+    let y1: f64 = a.y;
+    let y2: f64 = b.y;
+    let (x, width): (f64, f64) = {
+        if x1 < x2 {
+            (x1, x2 - x1)
+        } else {
+            (x2, x1 - x2)
+        }
+    };
+    let (y, height): (f64, f64) = {
+        if y1 < y2 {
+            (y1, y2 - y1)
+        } else {
+            (y2, y1 - y2)
+        }
+    };
+    Rect {
+        x,
+        y,
+        width,
+        height,
+    }
+}
+
 unsafe fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
     let n: usize = edges.len() - 1;
     gl.draw(args.viewport(), |context, gl| {
@@ -55,7 +89,7 @@ unsafe fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
             let edge: &Edge = &edges[n];
             let a: &Point = &(*edge.a).point;
             let b: &Point = &(*edge.b).point;
-            let rect: Rect = webs_lib::bounds(a, b);
+            let rect: Rect = make_rect(a, b);
             graphics::rectangle(
                 TEAL,
                 [

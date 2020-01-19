@@ -36,13 +36,6 @@ struct Intersection<'a> {
     edge: &'a mut Edge,
 }
 
-pub struct Rect {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
-}
-
 pub unsafe fn init(
     rng: &mut ThreadRng,
     uniform: &Uniform<f64>,
@@ -73,7 +66,12 @@ pub unsafe fn init(
 }
 
 #[allow(clippy::many_single_char_names)]
-fn intersection(a: &Point, b: &Point, c: &Point, d: &Point) -> Option<Point> {
+fn get_intersection(
+    a: &Point,
+    b: &Point,
+    c: &Point,
+    d: &Point,
+) -> Option<Point> {
     /* NOTE:     `a`
      *            |
      *       `c`--+--`d`
@@ -134,7 +132,7 @@ pub unsafe fn insert(
         let mut intersections: Vec<Intersection> =
             Vec::with_capacity(INTERSECTIONS_CAP);
         for edge in edges.iter_mut() {
-            if let Some(point) = intersection(
+            if let Some(point) = get_intersection(
                 &candidate_a,
                 &candidate_b,
                 &(*edge.a).point,
@@ -249,36 +247,9 @@ pub unsafe fn update(nodes: &mut ArrayVec<[Node; NODES_CAP]>) {
             ));
         }
     }
-    for (i, update) in updates {
-        let point: &mut Point = &mut nodes.get_unchecked_mut(i).point;
-        point.x = update.x;
-        point.y = update.y;
-    }
-}
-
-pub fn bounds(a: &Point, b: &Point) -> Rect {
-    let x1: f64 = a.x;
-    let x2: f64 = b.x;
-    let y1: f64 = a.y;
-    let y2: f64 = b.y;
-    let (x, width): (f64, f64) = {
-        if x1 < x2 {
-            (x1, x2 - x1)
-        } else {
-            (x2, x1 - x2)
-        }
-    };
-    let (y, height): (f64, f64) = {
-        if y1 < y2 {
-            (y1, y2 - y1)
-        } else {
-            (y2, y1 - y2)
-        }
-    };
-    Rect {
-        x,
-        y,
-        width,
-        height,
+    for (i, update_point) in updates {
+        let node_point: &mut Point = &mut nodes.get_unchecked_mut(i).point;
+        node_point.x = update_point.x;
+        node_point.y = update_point.y;
     }
 }

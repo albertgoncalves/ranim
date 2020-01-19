@@ -47,14 +47,14 @@ macro_rules! points {
     }};
 }
 
-fn construct_tree(b: &mut Bencher) {
+fn make_tree(b: &mut Bencher) {
     let mut rng: ThreadRng = rand::thread_rng();
     let uniform: Uniform<f64> =
         Uniform::new_inclusive(POINT_RNG_LOWER, POINT_RNG_UPPER);
     let mut points: ArrayVec<[Point; r#mod::CAPACITY]> = points!(rng, uniform);
     b.iter(|| {
         let mut trees: ArrayVec<[Tree; r#mod::CAPACITY]> = ArrayVec::new();
-        r#mod::construct_tree(&mut trees, &mut points, true, BOUNDS);
+        r#mod::make_tree(&mut trees, &mut points, true, BOUNDS);
     })
 }
 
@@ -66,7 +66,7 @@ fn search_tree(b: &mut Bencher) {
     let point: Point = point!(rng, uniform);
     let mut trees: ArrayVec<[Tree; r#mod::CAPACITY]> = ArrayVec::new();
     let tree: *const Tree =
-        r#mod::construct_tree(&mut trees, &mut points, true, BOUNDS);
+        r#mod::make_tree(&mut trees, &mut points, true, BOUNDS);
     b.iter(|| {
         let mut neighbors: ArrayVec<[*const Point; r#mod::CAPACITY]> =
             ArrayVec::new();
@@ -74,5 +74,5 @@ fn search_tree(b: &mut Bencher) {
     })
 }
 
-benchmark_group!(benches, construct_tree, search_tree);
+benchmark_group!(benches, make_tree, search_tree);
 benchmark_main!(benches);

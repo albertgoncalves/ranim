@@ -165,12 +165,8 @@ fn main() {
                 }
                 counter += 1;
             }
-            let tree: *const Tree = kdtree_lib::construct_tree(
-                &mut trees,
-                &mut points,
-                true,
-                BOUNDS,
-            );
+            let tree: *const Tree =
+                kdtree_lib::make_tree(&mut trees, &mut points, true, BOUNDS);
             unsafe {
                 kdtree_lib::search_tree(&point, tree, &mut neighbors);
                 render(&mut gl, &args, &point, &trees, &mut neighbors);

@@ -18,15 +18,7 @@ pub struct Bounds {
     pub upper: Point,
 }
 
-pub struct Tree {
-    pub point: Point,
-    pub bounds: Bounds,
-    pub horizontal: bool,
-    pub left: *const Tree,
-    pub right: *const Tree,
-}
-
-macro_rules! bounds {
+macro_rules! make_bounds {
     ($lower_x:expr, $lower_y:expr, $upper_x:expr, $upper_y: expr $(,)?) => {
         Bounds {
             lower: Point {
@@ -41,7 +33,15 @@ macro_rules! bounds {
     };
 }
 
-pub fn construct_tree(
+pub struct Tree {
+    pub point: Point,
+    pub bounds: Bounds,
+    pub horizontal: bool,
+    pub left: *const Tree,
+    pub right: *const Tree,
+}
+
+pub fn make_tree(
     trees: &mut ArrayVec<[Tree; CAPACITY]>,
     points: &mut [Point],
     horizontal: bool,
@@ -63,8 +63,8 @@ pub fn construct_tree(
             let x: f64 = point.x;
             (
                 point,
-                bounds!(lower_x, lower_y, x, upper_y),
-                bounds!(x, lower_y, upper_x, upper_y),
+                make_bounds!(lower_x, lower_y, x, upper_y),
+                make_bounds!(x, lower_y, upper_x, upper_y),
             )
         } else {
             points.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
@@ -72,14 +72,14 @@ pub fn construct_tree(
             let y: f64 = point.y;
             (
                 point,
-                bounds!(lower_x, lower_y, upper_x, y),
-                bounds!(lower_x, y, upper_x, upper_y),
+                make_bounds!(lower_x, lower_y, upper_x, y),
+                make_bounds!(lower_x, y, upper_x, upper_y),
             )
         }
     };
     let left: *const Tree =
-        construct_tree(trees, &mut points[..median], !horizontal, left_bounds);
-    let right: *const Tree = construct_tree(
+        make_tree(trees, &mut points[..median], !horizontal, left_bounds);
+    let right: *const Tree = make_tree(
         trees,
         &mut points[(median + 1)..],
         !horizontal,
