@@ -155,6 +155,12 @@ fn squared_distance(a: &Point, b: &Point) -> f64 {
     (x * x) + (y * y)
 }
 
+fn bounds_to_point_squared_distance(bounds: &Bounds, point: &Point) -> f64 {
+    let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
+    let y: f64 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
+    (x * x) + (y * y)
+}
+
 pub unsafe fn search_tree(
     point: &Point,
     tree: *mut Tree,
@@ -165,9 +171,9 @@ pub unsafe fn search_tree(
     while 0 < stack.len() {
         let tree: *mut Tree = stack.pop().unwrap();
         let bounds: &Bounds = &(*tree).bounds;
-        let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
-        let y: f64 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
-        if ((x * x) + (y * y)) < SEARCH_RADIUS_SQUARED {
+        if bounds_to_point_squared_distance(bounds, point)
+            < SEARCH_RADIUS_SQUARED
+        {
             let neighbor: &Point = &(*tree).point;
             if (point != neighbor)
                 && (squared_distance(point, neighbor) < SEARCH_RADIUS_SQUARED)
