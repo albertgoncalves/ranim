@@ -20,12 +20,16 @@ fn init_insert_update(b: &mut Bencher) {
         let mut edges: ArrayVec<[Edge; r#mod::EDGES_CAP]> = ArrayVec::new();
         unsafe {
             r#mod::init(&mut rng, &uniform, &mut nodes, &mut edges);
-            r#mod::insert(&mut rng, &uniform, &mut nodes, &mut edges);
-            r#mod::update(
-                &mut nodes,
-                r#mod::NEIGHBOR_DISTANCE_SQUARED,
-                r#mod::POINT_DRAG,
-            );
+            while (nodes.len() <= r#mod::NODES_LIMIT)
+                && (edges.len() <= r#mod::EDGES_LIMIT)
+            {
+                r#mod::insert(&mut rng, &uniform, &mut nodes, &mut edges);
+                r#mod::update(
+                    &mut nodes,
+                    r#mod::NEIGHBOR_DISTANCE_SQUARED,
+                    r#mod::POINT_DRAG,
+                );
+            }
         };
     })
 }
