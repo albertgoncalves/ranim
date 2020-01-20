@@ -153,7 +153,7 @@ fn bounds_to_point_squared_distance(bounds: &Bounds, point: &Point) -> f64 {
     (x * x) + (y * y)
 }
 
-fn search_tree(
+fn search_trees(
     point: &Point,
     trees: &ArrayVec<[Tree; CAPACITY]>,
     index: TreeIndex,
@@ -282,7 +282,7 @@ pub fn update_nodes(
                     + ((((left_point.y + right_point.y) / 2.0) - point.y)
                         / drag_attract),
             };
-            search_tree(
+            search_trees(
                 point,
                 &trees,
                 index,

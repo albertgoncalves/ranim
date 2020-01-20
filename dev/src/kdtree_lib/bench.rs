@@ -47,7 +47,7 @@ fn make_tree(b: &mut Bencher) {
     })
 }
 
-fn search_tree(b: &mut Bencher) {
+fn search_trees(b: &mut Bencher) {
     let mut rng: ThreadRng = rand::thread_rng();
     let uniform: Uniform<f64> =
         Uniform::new_inclusive(r#mod::POINT_RNG_LOWER, r#mod::POINT_RNG_UPPER);
@@ -61,10 +61,10 @@ fn search_tree(b: &mut Bencher) {
         b.iter(|| {
             let mut neighbors: ArrayVec<[*const Point; r#mod::CAPACITY]> =
                 ArrayVec::new();
-            r#mod::search_tree(&point, tree, &mut neighbors)
+            r#mod::search_trees(&point, tree, &mut neighbors)
         })
     }
 }
 
-benchmark_group!(benches, make_tree, search_tree);
+benchmark_group!(benches, make_tree, search_trees);
 benchmark_main!(benches);

@@ -149,7 +149,7 @@ fn main() {
                     true,
                     kdtree_lib::BOUNDS,
                 );
-                kdtree_lib::search_tree(&point, tree, &mut neighbors);
+                kdtree_lib::search_trees(&point, tree, &mut neighbors);
                 render(&mut gl, &args, &point, &trees, &mut neighbors);
             }
             trees.clear();

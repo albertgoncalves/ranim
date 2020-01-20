@@ -195,7 +195,7 @@ fn bounds_to_point_squared_distance(bounds: &Bounds, point: &Point) -> f64 {
     (x * x) + (y * y)
 }
 
-pub unsafe fn search_tree(
+pub unsafe fn search_trees(
     point: &Point,
     tree: *mut Tree,
     neighbors: &mut ArrayVec<[*const Point; CAPACITY]>,
