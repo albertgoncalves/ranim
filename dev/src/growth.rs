@@ -110,7 +110,7 @@ fn main() {
         if let Some(args) = event.update_args() {
             elapsed += args.dt;
             if 1.0 < elapsed {
-                print!("\r{}", f64::from(frames) / elapsed);
+                print!("\r{:>6.2}", f64::from(frames) / elapsed);
                 io::stdout().flush().unwrap();
                 frames = 0;
                 elapsed = 0.0;
