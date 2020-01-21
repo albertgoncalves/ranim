@@ -158,7 +158,6 @@ fn search_trees(
     trees: &ArrayVec<[Tree; CAPACITY]>,
     index: TreeIndex,
     neighbors: &mut ArrayVec<[TreeIndex; CAPACITY]>,
-    search_radius_squared: f64,
 ) {
     let mut stack: ArrayVec<[TreeIndex; CAPACITY]> = ArrayVec::new();
     stack.push(index);
@@ -166,11 +165,11 @@ fn search_trees(
         let index: TreeIndex = stack.pop().unwrap();
         let tree: &Tree = &trees[index];
         if bounds_to_point_squared_distance(&tree.bounds, point)
-            < search_radius_squared
+            < SEARCH_RADIUS_SQUARED
         {
             let neighbor: &Point = &tree.point;
             if (point != neighbor)
-                && (squared_distance(point, neighbor) < search_radius_squared)
+                && (squared_distance(point, neighbor) < SEARCH_RADIUS_SQUARED)
             {
                 neighbors.push(index);
             }
@@ -231,16 +230,11 @@ fn insert_node(nodes: &mut ArrayVec<[Node; CAPACITY]>, left_index: NodeIndex) {
     nodes[right_index].left_index = index;
 }
 
-#[allow(clippy::cast_precision_loss, clippy::too_many_arguments)]
+#[allow(clippy::cast_precision_loss)]
 pub fn update_nodes(
     rng: &mut ThreadRng,
     uniform: &Uniform<f64>,
     nodes: &mut ArrayVec<[Node; CAPACITY]>,
-    bounds: Bounds,
-    neighbor_radius_squared: f64,
-    search_radius_squared: f64,
-    drag_attract: f64,
-    drag_reject: f64,
 ) {
     for node in nodes.iter_mut() {
         node.point.x += rng.sample(uniform);
@@ -248,7 +242,7 @@ pub fn update_nodes(
     }
     let mut index: Option<usize> = None;
     for i in 0..nodes.len() {
-        if neighbor_radius_squared
+        if NEIGHBOR_RADIUS_SQUARED
             < squared_distance(
                 &nodes[i].point,
                 &nodes[nodes[i].right_index].point,
@@ -267,7 +261,7 @@ pub fn update_nodes(
     }
     let mut trees: ArrayVec<[Tree; CAPACITY]> = ArrayVec::new();
     let mut neighbors: ArrayVec<[TreeIndex; CAPACITY]> = ArrayVec::new();
-    if let Some(index) = make_tree(&mut trees, &mut points, true, bounds) {
+    if let Some(index) = make_tree(&mut trees, &mut points, true, BOUNDS) {
         let mut next_points: ArrayVec<[(usize, Point); CAPACITY]> =
             ArrayVec::new();
         for (i, node) in nodes.iter().enumerate() {
@@ -277,18 +271,12 @@ pub fn update_nodes(
             let mut next_point: Point = Point {
                 x: point.x
                     + ((((left_point.x + right_point.x) / 2.0) - point.x)
-                        / drag_attract),
+                        / DRAG_ATTRACT),
                 y: point.y
                     + ((((left_point.y + right_point.y) / 2.0) - point.y)
-                        / drag_attract),
+                        / DRAG_ATTRACT),
             };
-            search_trees(
-                point,
-                &trees,
-                index,
-                &mut neighbors,
-                search_radius_squared,
-            );
+            search_trees(point, &trees, index, &mut neighbors);
             let n: usize = neighbors.len();
             if 0 < n {
                 let mut x: f64 = 0.0;
@@ -299,8 +287,8 @@ pub fn update_nodes(
                     y += point.y - neighbor_point.y;
                 }
                 let n: f64 = n as f64;
-                next_point.x += (x / n) / drag_reject;
-                next_point.y += (y / n) / drag_reject;
+                next_point.x += (x / n) / DRAG_REJECT;
+                next_point.y += (y / n) / DRAG_REJECT;
             }
             next_points.push((i, next_point));
         }

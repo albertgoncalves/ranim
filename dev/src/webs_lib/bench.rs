@@ -24,11 +24,7 @@ fn init_insert_update(b: &mut Bencher) {
                 && (edges.len() <= r#mod::EDGES_LIMIT)
             {
                 r#mod::insert(&mut rng, &uniform, &mut nodes, &mut edges);
-                r#mod::update(
-                    &mut nodes,
-                    r#mod::NEIGHBOR_DISTANCE_SQUARED,
-                    r#mod::POINT_DRAG,
-                );
+                r#mod::update(&mut nodes);
             }
         };
     })

@@ -93,16 +93,7 @@ fn main() {
                 nodes.clear();
                 growth_lib::init_nodes(&mut rng, &uniform_init, &mut nodes);
             } else {
-                growth_lib::update_nodes(
-                    &mut rng,
-                    &uniform_walk,
-                    &mut nodes,
-                    growth_lib::BOUNDS,
-                    growth_lib::NEIGHBOR_RADIUS_SQUARED,
-                    growth_lib::SEARCH_RADIUS_SQUARED,
-                    growth_lib::DRAG_ATTRACT,
-                    growth_lib::DRAG_REJECT,
-                );
+                growth_lib::update_nodes(&mut rng, &uniform_walk, &mut nodes);
             }
             render(&mut gl, &args, &nodes);
             frames += 1;

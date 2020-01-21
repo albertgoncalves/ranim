@@ -241,11 +241,7 @@ fn squared_distance(a: &Point, b: &Point) -> f64 {
     (x * x) + (y * y)
 }
 
-pub unsafe fn update(
-    nodes: &mut ArrayVec<[Node; NODES_CAP]>,
-    neighbor_distance_squared: f64,
-    point_drag: f64,
-) {
+pub unsafe fn update(nodes: &mut ArrayVec<[Node; NODES_CAP]>) {
     let mut updates: ArrayVec<[(usize, Point); NODES_CAP]> = ArrayVec::new();
     for i in NODES_INIT..nodes.len() {
         let node: &Node = nodes.get_unchecked(i);
@@ -257,7 +253,7 @@ pub unsafe fn update(
         let mut update_y: f64 = 0.0;
         for neighbor in &node.neighbors {
             let neighbor_point: &Point = &(**neighbor).point;
-            if neighbor_distance_squared
+            if NEIGHBOR_DISTANCE_SQUARED
                 < squared_distance(node_point, neighbor_point)
             {
                 n += 1.0;
@@ -269,8 +265,8 @@ pub unsafe fn update(
             updates.push_unchecked((
                 i,
                 Point {
-                    x: node_x - ((update_x / n) * point_drag),
-                    y: node_y - ((update_y / n) * point_drag),
+                    x: node_x - ((update_x / n) * POINT_DRAG),
+                    y: node_y - ((update_y / n) * POINT_DRAG),
                 },
             ));
         }

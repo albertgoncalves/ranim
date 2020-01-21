@@ -25,16 +25,7 @@ fn init_update_nodes(b: &mut Bencher) {
         let mut nodes: ArrayVec<[Node; r#mod::CAPACITY]> = ArrayVec::new();
         r#mod::init_nodes(&mut rng, &uniform_init, &mut nodes);
         for _ in 0..r#mod::CAPACITY {
-            r#mod::update_nodes(
-                &mut rng,
-                &uniform_walk,
-                &mut nodes,
-                r#mod::BOUNDS,
-                r#mod::NEIGHBOR_RADIUS_SQUARED,
-                r#mod::SEARCH_RADIUS_SQUARED,
-                r#mod::DRAG_ATTRACT,
-                r#mod::DRAG_REJECT,
-            );
+            r#mod::update_nodes(&mut rng, &uniform_walk, &mut nodes);
         }
     })
 }

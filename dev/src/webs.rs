@@ -156,11 +156,7 @@ fn main() {
                     );
                     counter = 0;
                 }
-                webs_lib::update(
-                    &mut nodes,
-                    webs_lib::NEIGHBOR_DISTANCE_SQUARED,
-                    webs_lib::POINT_DRAG,
-                );
+                webs_lib::update(&mut nodes);
                 render(&mut gl, &args, &edges);
                 frames += 1;
                 counter += 1;
