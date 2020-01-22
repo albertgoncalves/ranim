@@ -1,3 +1,5 @@
+#![allow(clippy::cast_possible_truncation)]
+
 use arrayvec::ArrayVec;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
@@ -34,15 +36,15 @@ const INTERSECTIONS_CAP: usize = 16;
 pub const NODES_LIMIT: usize = NODES_CAP - 2;
 pub const EDGES_LIMIT: usize = EDGES_CAP - 3;
 
-pub const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF;
-pub const POINT_RNG_LOWER: f64 = WINDOW_EDGE_HALF_MINUS;
+pub const POINT_RNG_UPPER: f32 = WINDOW_EDGE_HALF as f32;
+pub const POINT_RNG_LOWER: f32 = WINDOW_EDGE_HALF_MINUS as f32;
 
-pub const POINT_DRAG: f64 = 0.0025;
-pub const NEIGHBOR_DISTANCE_SQUARED: f64 = 100.0;
+pub const POINT_DRAG: f32 = 0.0025;
+pub const NEIGHBOR_DISTANCE_SQUARED: f32 = 100.0;
 
 pub struct Point {
-    pub x: f64,
-    pub y: f64,
+    pub x: f32,
+    pub y: f32,
 }
 
 pub struct Node {
@@ -62,7 +64,7 @@ struct Intersection<'a> {
 
 pub unsafe fn init(
     rng: &mut ThreadRng,
-    uniform: &Uniform<f64>,
+    uniform: Uniform<f32>,
     nodes: &mut ArrayVec<[Node; NODES_CAP]>,
     edges: &mut ArrayVec<[Edge; EDGES_CAP]>,
 ) {
@@ -102,19 +104,19 @@ fn get_intersection(
      *            |
      *           `b`
      */
-    let x1: f64 = a.x;
-    let x2: f64 = b.x;
-    let x3: f64 = c.x;
-    let x4: f64 = d.x;
-    let y1: f64 = a.y;
-    let y2: f64 = b.y;
-    let y3: f64 = c.y;
-    let y4: f64 = d.y;
-    let denominator: f64 = ((x1 - x2) * (y3 - y4)) - ((y1 - y2) * (x3 - x4));
+    let x1: f32 = a.x;
+    let x2: f32 = b.x;
+    let x3: f32 = c.x;
+    let x4: f32 = d.x;
+    let y1: f32 = a.y;
+    let y2: f32 = b.y;
+    let y3: f32 = c.y;
+    let y4: f32 = d.y;
+    let denominator: f32 = ((x1 - x2) * (y3 - y4)) - ((y1 - y2) * (x3 - x4));
     if denominator != 0.0 {
-        let t: f64 =
+        let t: f32 =
             (((x1 - x3) * (y3 - y4)) - ((y1 - y3) * (x3 - x4))) / denominator;
-        let u: f64 =
+        let u: f32 =
             -(((x1 - x2) * (y1 - y3)) - ((y1 - y2) * (x1 - x3))) / denominator;
         if (0.0 <= t) && (t <= 1.0) && (0.0 <= u) && (u <= 1.0) {
             return Some(Point {
@@ -140,7 +142,7 @@ macro_rules! replace_neighbor {
 #[allow(clippy::comparison_chain, clippy::many_single_char_names)]
 pub unsafe fn insert(
     rng: &mut ThreadRng,
-    uniform: &Uniform<f64>,
+    uniform: Uniform<f32>,
     nodes: &mut ArrayVec<[Node; NODES_CAP]>,
     edges: &mut ArrayVec<[Edge; EDGES_CAP]>,
 ) {
@@ -235,9 +237,9 @@ pub unsafe fn insert(
     }
 }
 
-fn squared_distance(a: &Point, b: &Point) -> f64 {
-    let x: f64 = a.x - b.x;
-    let y: f64 = a.y - b.y;
+fn squared_distance(a: &Point, b: &Point) -> f32 {
+    let x: f32 = a.x - b.x;
+    let y: f32 = a.y - b.y;
     (x * x) + (y * y)
 }
 
@@ -246,11 +248,11 @@ pub unsafe fn update(nodes: &mut ArrayVec<[Node; NODES_CAP]>) {
     for i in NODES_INIT..nodes.len() {
         let node: &Node = nodes.get_unchecked(i);
         let node_point: &Point = &node.point;
-        let node_x: f64 = node_point.x;
-        let node_y: f64 = node_point.y;
-        let mut n: f64 = 0.0;
-        let mut update_x: f64 = 0.0;
-        let mut update_y: f64 = 0.0;
+        let node_x: f32 = node_point.x;
+        let node_y: f32 = node_point.y;
+        let mut n: f32 = 0.0;
+        let mut update_x: f32 = 0.0;
+        let mut update_y: f32 = 0.0;
         for neighbor in &node.neighbors {
             let neighbor_point: &Point = &(**neighbor).point;
             if NEIGHBOR_DISTANCE_SQUARED

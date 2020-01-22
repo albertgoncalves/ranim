@@ -1,3 +1,5 @@
+#![allow(clippy::cast_lossless)]
+
 mod webs_lib;
 
 use webs_lib::{Edge, Node, Point};
@@ -22,31 +24,29 @@ struct Rect {
     height: f64,
 }
 
-fn make_rect(a: &webs_lib::Point, b: &webs_lib::Point) -> Rect {
-    let x1: f64 = a.x;
-    let x2: f64 = b.x;
-    let y1: f64 = a.y;
-    let y2: f64 = b.y;
-    let (x, width): (f64, f64) = {
-        if x1 < x2 {
-            (x1, x2 - x1)
-        } else {
-            (x2, x1 - x2)
+macro_rules! make_rect {
+    ($x1:expr, $y1:expr, $x2:expr, $y2:expr $(,)?) => {{
+        let (x, width): (f64, f64) = {
+            if $x1 < $x2 {
+                ($x1, $x2 - $x1)
+            } else {
+                ($x2, $x1 - $x2)
+            }
+        };
+        let (y, height): (f64, f64) = {
+            if $y1 < $y2 {
+                ($y1, $y2 - $y1)
+            } else {
+                ($y2, $y1 - $y2)
+            }
+        };
+        Rect {
+            x,
+            y,
+            width,
+            height,
         }
-    };
-    let (y, height): (f64, f64) = {
-        if y1 < y2 {
-            (y1, y2 - y1)
-        } else {
-            (y2, y1 - y2)
-        }
-    };
-    Rect {
-        x,
-        y,
-        width,
-        height,
-    }
+    }};
 }
 
 unsafe fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
@@ -60,7 +60,11 @@ unsafe fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
             let edge: &Edge = &edges[n];
             let a: &Point = &(*edge.a).point;
             let b: &Point = &(*edge.b).point;
-            let rect: Rect = make_rect(a, b);
+            let a_x: f64 = a.x as f64;
+            let a_y: f64 = a.y as f64;
+            let b_x: f64 = b.x as f64;
+            let b_y: f64 = b.y as f64;
+            let rect: Rect = make_rect!(a_x, a_y, b_x, b_y);
             graphics::rectangle(
                 webs_lib::TEAL,
                 [
@@ -75,15 +79,15 @@ unsafe fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
             graphics::line(
                 webs_lib::CYAN,
                 webs_lib::LINE_WIDTH,
-                [a.x, a.y, b.x, b.y],
+                [a_x, a_y, b_x, b_y],
                 transform,
                 gl,
             );
             graphics::ellipse(
                 webs_lib::CYAN,
                 [
-                    a.x - webs_lib::RADIUS,
-                    a.y - webs_lib::RADIUS,
+                    a_x - webs_lib::RADIUS,
+                    a_y - webs_lib::RADIUS,
                     webs_lib::RADIUS_2,
                     webs_lib::RADIUS_2,
                 ],
@@ -93,8 +97,8 @@ unsafe fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
             graphics::ellipse(
                 webs_lib::CYAN,
                 [
-                    b.x - webs_lib::RADIUS,
-                    b.y - webs_lib::RADIUS,
+                    b_x - webs_lib::RADIUS,
+                    b_y - webs_lib::RADIUS,
                     webs_lib::RADIUS_2,
                     webs_lib::RADIUS_2,
                 ],
@@ -105,10 +109,14 @@ unsafe fn render(gl: &mut GlGraphics, args: &RenderArgs, edges: &[Edge]) {
         for edge in edges.iter().take(n) {
             let a: &Point = &(*edge.a).point;
             let b: &Point = &(*edge.b).point;
+            let a_x: f64 = a.x as f64;
+            let a_y: f64 = a.y as f64;
+            let b_x: f64 = b.x as f64;
+            let b_y: f64 = b.y as f64;
             graphics::line(
                 webs_lib::LIGHT_GRAY,
                 webs_lib::LINE_WIDTH,
-                [a.x, a.y, b.x, b.y],
+                [a_x, a_y, b_x, b_y],
                 transform,
                 gl,
             );
@@ -131,7 +139,7 @@ fn main() {
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();
-    let uniform: Uniform<f64> = Uniform::new_inclusive(
+    let uniform: Uniform<f32> = Uniform::new_inclusive(
         webs_lib::POINT_RNG_LOWER,
         webs_lib::POINT_RNG_UPPER,
     );
@@ -141,7 +149,7 @@ fn main() {
     let mut frames: u16 = 0;
     let mut elapsed: f64 = 0.0;
     unsafe {
-        webs_lib::init(&mut rng, &uniform, &mut nodes, &mut edges);
+        webs_lib::init(&mut rng, uniform, &mut nodes, &mut edges);
         while let Some(event) = events.next(&mut window) {
             if let Some(args) = event.render_args() {
                 if (webs_lib::NODES_LIMIT < nodes.len())
@@ -149,10 +157,10 @@ fn main() {
                 {
                     nodes.clear();
                     edges.clear();
-                    webs_lib::init(&mut rng, &uniform, &mut nodes, &mut edges);
+                    webs_lib::init(&mut rng, uniform, &mut nodes, &mut edges);
                 } else if webs_lib::INSERT_FRAME_INTERVAL < counter {
                     webs_lib::insert(
-                        &mut rng, &uniform, &mut nodes, &mut edges,
+                        &mut rng, uniform, &mut nodes, &mut edges,
                     );
                     counter = 0;
                 }
@@ -164,7 +172,7 @@ fn main() {
             if let Some(args) = event.update_args() {
                 elapsed += args.dt;
                 if 1.0 < elapsed {
-                    print!("\r{:>7.2} fps", f64::from(frames) / elapsed);
+                    print!("\r{:>7.2} fps", (frames as f64) / elapsed);
                     io::stdout().flush().unwrap();
                     frames = 0;
                     elapsed = 0.0;
