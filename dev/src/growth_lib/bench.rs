@@ -14,18 +14,18 @@ use rand::rngs::ThreadRng;
 fn init_update_nodes(b: &mut Bencher) {
     b.iter(|| {
         let mut rng: ThreadRng = rand::thread_rng();
-        let uniform_init: Uniform<f64> = Uniform::new_inclusive(
+        let uniform_init: Uniform<f32> = Uniform::new_inclusive(
             r#mod::POINT_RNG_LOWER,
             r#mod::POINT_RNG_UPPER,
         );
-        let uniform_walk: Uniform<f64> = Uniform::new_inclusive(
+        let uniform_walk: Uniform<f32> = Uniform::new_inclusive(
             r#mod::WALK_RNG_LOWER,
             r#mod::WALK_RNG_UPPER,
         );
         let mut nodes: ArrayVec<[Node; r#mod::CAPACITY]> = ArrayVec::new();
-        r#mod::init_nodes(&mut rng, &uniform_init, &mut nodes);
+        r#mod::init_nodes(&mut rng, uniform_init, &mut nodes);
         for _ in 0..r#mod::CAPACITY {
-            r#mod::update_nodes(&mut rng, &uniform_walk, &mut nodes);
+            r#mod::update_nodes(&mut rng, uniform_walk, &mut nodes);
         }
     })
 }

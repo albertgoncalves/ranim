@@ -1,3 +1,5 @@
+#![allow(clippy::cast_lossless)]
+
 mod growth_lib;
 
 use arrayvec::ArrayVec;
@@ -22,11 +24,13 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, nodes: &[Node]) {
         graphics::clear(growth_lib::DARK_GRAY, gl);
         {
             let node: &Node = nodes.last().unwrap();
+            let x: f64 = node.point.x as f64;
+            let y: f64 = node.point.y as f64;
             graphics::ellipse(
                 growth_lib::CYAN,
                 [
-                    node.point.x - growth_lib::RADIUS_2,
-                    node.point.y - growth_lib::RADIUS_2,
+                    x - growth_lib::RADIUS_2,
+                    y - growth_lib::RADIUS_2,
                     growth_lib::RADIUS_4,
                     growth_lib::RADIUS_4,
                 ],
@@ -35,8 +39,8 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, nodes: &[Node]) {
             );
         }
         for node in nodes {
-            let x: f64 = node.point.x;
-            let y: f64 = node.point.y;
+            let x: f64 = node.point.x as f64;
+            let y: f64 = node.point.y as f64;
             graphics::ellipse(
                 growth_lib::LIGHT_GRAY,
                 [
@@ -49,10 +53,12 @@ fn render(gl: &mut GlGraphics, args: &RenderArgs, nodes: &[Node]) {
                 gl,
             );
             let left: &Point = &nodes[node.left_index].point;
+            let left_x: f64 = left.x as f64;
+            let left_y: f64 = left.y as f64;
             graphics::line(
                 growth_lib::LIGHT_GRAY,
                 growth_lib::LINE_WIDTH,
-                [left.x, left.y, x, y],
+                [left_x, left_y, x, y],
                 transform,
                 gl,
             )
@@ -75,25 +81,25 @@ fn main() {
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();
-    let uniform_init: Uniform<f64> = Uniform::new_inclusive(
+    let uniform_init: Uniform<f32> = Uniform::new_inclusive(
         growth_lib::POINT_RNG_LOWER,
         growth_lib::POINT_RNG_UPPER,
     );
-    let uniform_walk: Uniform<f64> = Uniform::new_inclusive(
+    let uniform_walk: Uniform<f32> = Uniform::new_inclusive(
         growth_lib::WALK_RNG_LOWER,
         growth_lib::WALK_RNG_UPPER,
     );
     let mut nodes: ArrayVec<[Node; growth_lib::CAPACITY]> = ArrayVec::new();
-    growth_lib::init_nodes(&mut rng, &uniform_init, &mut nodes);
+    growth_lib::init_nodes(&mut rng, uniform_init, &mut nodes);
     let mut frames: u16 = 0;
     let mut elapsed: f64 = 0.0;
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
             if growth_lib::NODES_CAP_LIMIT < nodes.len() {
                 nodes.clear();
-                growth_lib::init_nodes(&mut rng, &uniform_init, &mut nodes);
+                growth_lib::init_nodes(&mut rng, uniform_init, &mut nodes);
             } else {
-                growth_lib::update_nodes(&mut rng, &uniform_walk, &mut nodes);
+                growth_lib::update_nodes(&mut rng, uniform_walk, &mut nodes);
             }
             render(&mut gl, &args, &nodes);
             frames += 1;
@@ -101,7 +107,7 @@ fn main() {
         if let Some(args) = event.update_args() {
             elapsed += args.dt;
             if 1.0 < elapsed {
-                print!("\r{:>7.2} fps", f64::from(frames) / elapsed);
+                print!("\r{:>7.2} fps", (frames as f64) / elapsed);
                 io::stdout().flush().unwrap();
                 frames = 0;
                 elapsed = 0.0;

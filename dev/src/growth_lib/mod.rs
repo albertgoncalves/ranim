@@ -1,3 +1,5 @@
+#![allow(clippy::cast_possible_truncation)]
+
 use arrayvec::ArrayVec;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
@@ -23,32 +25,32 @@ pub const NODES_CAP_LIMIT: usize = CAPACITY - 1;
 const NODES_INIT: usize = 3;
 const NODES_INIT_LIMIT: usize = NODES_INIT - 1;
 
-pub const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF / 3.0;
-pub const POINT_RNG_LOWER: f64 = -POINT_RNG_UPPER;
-pub const WALK_RNG_UPPER: f64 = 0.15;
-pub const WALK_RNG_LOWER: f64 = -WALK_RNG_UPPER;
+pub const POINT_RNG_UPPER: f32 = (WINDOW_EDGE_HALF as f32) / 3.0;
+pub const POINT_RNG_LOWER: f32 = -POINT_RNG_UPPER;
+pub const WALK_RNG_UPPER: f32 = 0.15;
+pub const WALK_RNG_LOWER: f32 = -WALK_RNG_UPPER;
 
-pub const NEIGHBOR_RADIUS_SQUARED: f64 = 1000.0;
-pub const SEARCH_RADIUS_SQUARED: f64 = 2000.0;
+pub const NEIGHBOR_RADIUS_SQUARED: f32 = 1000.0;
+pub const SEARCH_RADIUS_SQUARED: f32 = 2000.0;
 
-pub const DRAG_ATTRACT: f64 = 35.0;
-pub const DRAG_REJECT: f64 = 25.0;
+pub const DRAG_ATTRACT: f32 = 35.0;
+pub const DRAG_REJECT: f32 = 25.0;
 
 pub const BOUNDS: Bounds = Bounds {
     lower: Point {
-        x: WINDOW_EDGE_HALF_MINUS,
-        y: WINDOW_EDGE_HALF_MINUS,
+        x: WINDOW_EDGE_HALF_MINUS as f32,
+        y: WINDOW_EDGE_HALF_MINUS as f32,
     },
     upper: Point {
-        x: WINDOW_EDGE_HALF,
-        y: WINDOW_EDGE_HALF,
+        x: WINDOW_EDGE_HALF as f32,
+        y: WINDOW_EDGE_HALF as f32,
     },
 };
 
 #[derive(Clone, PartialEq)]
 pub struct Point {
-    pub x: f64,
-    pub y: f64,
+    pub x: f32,
+    pub y: f32,
 }
 
 type NodeIndex = usize;
@@ -99,15 +101,15 @@ fn make_tree(
         return None;
     }
     let median: usize = n / 2;
-    let lower_x: f64 = bounds.lower.x;
-    let lower_y: f64 = bounds.lower.y;
-    let upper_x: f64 = bounds.upper.x;
-    let upper_y: f64 = bounds.upper.y;
+    let lower_x: f32 = bounds.lower.x;
+    let lower_y: f32 = bounds.lower.y;
+    let upper_x: f32 = bounds.upper.x;
+    let upper_y: f32 = bounds.upper.y;
     let (point, left_bounds, right_bounds): (Point, Bounds, Bounds) = {
         if horizontal {
             points.sort_unstable_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
             let point: Point = points[median].clone();
-            let x: f64 = point.x;
+            let x: f32 = point.x;
             (
                 point,
                 make_bounds!(lower_x, lower_y, x, upper_y),
@@ -116,7 +118,7 @@ fn make_tree(
         } else {
             points.sort_unstable_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
             let point: Point = points[median].clone();
-            let y: f64 = point.y;
+            let y: f32 = point.y;
             (
                 point,
                 make_bounds!(lower_x, lower_y, upper_x, y),
@@ -141,15 +143,15 @@ fn make_tree(
     Some(trees.len() - 1)
 }
 
-fn squared_distance(a: &Point, b: &Point) -> f64 {
-    let x: f64 = a.x - b.x;
-    let y: f64 = a.y - b.y;
+fn squared_distance(a: &Point, b: &Point) -> f32 {
+    let x: f32 = a.x - b.x;
+    let y: f32 = a.y - b.y;
     (x * x) + (y * y)
 }
 
-fn bounds_to_point_squared_distance(bounds: &Bounds, point: &Point) -> f64 {
-    let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
-    let y: f64 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
+fn bounds_to_point_squared_distance(bounds: &Bounds, point: &Point) -> f32 {
+    let x: f32 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
+    let y: f32 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
     (x * x) + (y * y)
 }
 
@@ -185,7 +187,7 @@ fn search_trees(
 
 pub fn init_nodes(
     rng: &mut ThreadRng,
-    uniform: &Uniform<f64>,
+    uniform: Uniform<f32>,
     nodes: &mut ArrayVec<[Node; CAPACITY]>,
 ) {
     for i in 0..NODES_INIT {
@@ -214,10 +216,10 @@ fn insert_node(nodes: &mut ArrayVec<[Node; CAPACITY]>, left_index: NodeIndex) {
     let right_index: NodeIndex = nodes[left_index].right_index;
     let left_point: &Point = &nodes[left_index].point;
     let right_point: &Point = &nodes[right_index].point;
-    let left_x: f64 = left_point.x;
-    let left_y: f64 = left_point.y;
-    let right_x: f64 = right_point.x;
-    let right_y: f64 = right_point.y;
+    let left_x: f32 = left_point.x;
+    let left_y: f32 = left_point.y;
+    let right_x: f32 = right_point.x;
+    let right_y: f32 = right_point.y;
     nodes.push(Node {
         point: Point {
             x: (left_x + right_x) / 2.0,
@@ -233,7 +235,7 @@ fn insert_node(nodes: &mut ArrayVec<[Node; CAPACITY]>, left_index: NodeIndex) {
 #[allow(clippy::cast_precision_loss)]
 pub fn update_nodes(
     rng: &mut ThreadRng,
-    uniform: &Uniform<f64>,
+    uniform: Uniform<f32>,
     nodes: &mut ArrayVec<[Node; CAPACITY]>,
 ) {
     for node in nodes.iter_mut() {
@@ -279,14 +281,14 @@ pub fn update_nodes(
             search_trees(point, &trees, index, &mut neighbors);
             let n: usize = neighbors.len();
             if 0 < n {
-                let mut x: f64 = 0.0;
-                let mut y: f64 = 0.0;
+                let mut x: f32 = 0.0;
+                let mut y: f32 = 0.0;
                 for neighbor_index in neighbors.drain(..n) {
                     let neighbor_point: &Point = &trees[neighbor_index].point;
                     x += point.x - neighbor_point.x;
                     y += point.y - neighbor_point.y;
                 }
-                let n: f64 = n as f64;
+                let n: f32 = n as f32;
                 next_point.x += (x / n) / DRAG_REJECT;
                 next_point.y += (y / n) / DRAG_REJECT;
             }
