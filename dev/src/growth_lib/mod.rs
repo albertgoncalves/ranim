@@ -6,8 +6,8 @@ use rand::rngs::ThreadRng;
 use rand::Rng;
 
 pub const WINDOW_EDGE: f64 = 800.0;
-pub const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
-pub const WINDOW_EDGE_HALF_MINUS: f64 = -WINDOW_EDGE_HALF;
+pub const WINDOW_EDGE_HALF: f32 = (WINDOW_EDGE as f32) / 2.0;
+pub const WINDOW_EDGE_HALF_MINUS: f32 = -WINDOW_EDGE_HALF;
 
 pub const ANTI_ALIAS: u8 = 4;
 
@@ -25,7 +25,7 @@ pub const NODES_CAP_LIMIT: usize = CAPACITY - 1;
 const NODES_INIT: usize = 3;
 const NODES_INIT_LIMIT: usize = NODES_INIT - 1;
 
-pub const POINT_RNG_UPPER: f32 = (WINDOW_EDGE_HALF as f32) / 3.0;
+pub const POINT_RNG_UPPER: f32 = WINDOW_EDGE_HALF / 3.0;
 pub const POINT_RNG_LOWER: f32 = -POINT_RNG_UPPER;
 pub const WALK_RNG_UPPER: f32 = 0.15;
 pub const WALK_RNG_LOWER: f32 = -WALK_RNG_UPPER;

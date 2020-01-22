@@ -9,13 +9,14 @@ use graphics::math::Matrix2d;
 use graphics::Transformed;
 use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::{EventSettings, Events};
-use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
+use piston::input::{RenderArgs, RenderEvent};
 use piston::window::WindowSettings;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use sdl2_window::Sdl2Window;
 use std::io;
 use std::io::Write;
+use std::time::Instant;
 
 struct Rect {
     x: f64,
@@ -147,7 +148,8 @@ fn main() {
     let mut edges: ArrayVec<[Edge; webs_lib::EDGES_CAP]> = ArrayVec::new();
     let mut counter: u16 = 0;
     let mut frames: u16 = 0;
-    let mut elapsed: f64 = 0.0;
+    let mut elapsed: f32 = 0.0;
+    let mut clock: Instant = Instant::now();
     unsafe {
         webs_lib::init(&mut rng, uniform, &mut nodes, &mut edges);
         while let Some(event) = events.next(&mut window) {
@@ -165,14 +167,13 @@ fn main() {
                     counter = 0;
                 }
                 webs_lib::update(&mut nodes);
+                counter += 1;
                 render(&mut gl, &args, &edges);
                 frames += 1;
-                counter += 1;
-            }
-            if let Some(args) = event.update_args() {
-                elapsed += args.dt;
+                elapsed += clock.elapsed().as_secs_f32();
+                clock = Instant::now();
                 if 1.0 < elapsed {
-                    print!("\r{:>7.2} fps", (frames as f64) / elapsed);
+                    print!("\r{:>7.2} fps", (frames as f32) / elapsed);
                     io::stdout().flush().unwrap();
                     frames = 0;
                     elapsed = 0.0;

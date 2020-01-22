@@ -8,13 +8,14 @@ use graphics::Transformed;
 use growth_lib::{Node, Point};
 use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::{EventSettings, Events};
-use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
+use piston::input::{RenderArgs, RenderEvent};
 use piston::window::WindowSettings;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use sdl2_window::Sdl2Window;
 use std::io;
 use std::io::Write;
+use std::time::Instant;
 
 fn render(gl: &mut GlGraphics, args: &RenderArgs, nodes: &[Node]) {
     gl.draw(args.viewport(), |context, gl| {
@@ -92,7 +93,8 @@ fn main() {
     let mut nodes: ArrayVec<[Node; growth_lib::CAPACITY]> = ArrayVec::new();
     growth_lib::init_nodes(&mut rng, uniform_init, &mut nodes);
     let mut frames: u16 = 0;
-    let mut elapsed: f64 = 0.0;
+    let mut elapsed: f32 = 0.0;
+    let mut clock: Instant = Instant::now();
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
             if growth_lib::NODES_CAP_LIMIT < nodes.len() {
@@ -103,15 +105,14 @@ fn main() {
             }
             render(&mut gl, &args, &nodes);
             frames += 1;
-        }
-        if let Some(args) = event.update_args() {
-            elapsed += args.dt;
+            elapsed += clock.elapsed().as_secs_f32();
+            clock = Instant::now();
             if 1.0 < elapsed {
-                print!("\r{:>7.2} fps", (frames as f64) / elapsed);
+                print!("\r{:>7.2} fps", (frames as f32) / elapsed);
                 io::stdout().flush().unwrap();
                 frames = 0;
                 elapsed = 0.0;
-            }
+            };
         }
     }
     println!()
