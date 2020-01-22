@@ -1,10 +1,12 @@
+#![allow(clippy::cast_possible_truncation)]
+
 use arrayvec::ArrayVec;
 use std::ptr;
 use std::slice;
 
 pub const WINDOW_EDGE: f64 = 800.0;
-pub const WINDOW_EDGE_HALF: f64 = WINDOW_EDGE / 2.0;
-pub const WINDOW_EDGE_HALF_MINUS: f64 = -WINDOW_EDGE_HALF;
+pub const WINDOW_EDGE_HALF: f32 = (WINDOW_EDGE as f32) / 2.0;
+pub const WINDOW_EDGE_HALF_MINUS: f32 = -WINDOW_EDGE_HALF;
 
 pub const ANTI_ALIAS: u8 = 4;
 
@@ -22,14 +24,14 @@ pub const RELOAD_FRAME_INTERVAL: u16 = 60 * 8;
 
 pub const CAPACITY: usize = 100;
 
-pub const SEARCH_RADIUS: f64 = 150.0;
-pub const SEARCH_RADIUS_2: f64 = SEARCH_RADIUS * 2.0;
-const SEARCH_RADIUS_SQUARED: f64 = SEARCH_RADIUS * SEARCH_RADIUS;
+pub const SEARCH_RADIUS: f32 = 150.0;
+pub const SEARCH_RADIUS_2: f32 = SEARCH_RADIUS * 2.0;
+const SEARCH_RADIUS_SQUARED: f32 = SEARCH_RADIUS * SEARCH_RADIUS;
 
-pub const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF - 50.0;
-pub const POINT_RNG_LOWER: f64 = -POINT_RNG_UPPER;
-pub const WALK_RNG_UPPER: f64 = 0.35;
-pub const WALK_RNG_LOWER: f64 = -WALK_RNG_UPPER;
+pub const POINT_RNG_UPPER: f32 = WINDOW_EDGE_HALF - 50.0;
+pub const POINT_RNG_LOWER: f32 = -POINT_RNG_UPPER;
+pub const WALK_RNG_UPPER: f32 = 0.35;
+pub const WALK_RNG_LOWER: f32 = -WALK_RNG_UPPER;
 
 pub const BOUNDS: Bounds = Bounds {
     lower: Point {
@@ -44,8 +46,8 @@ pub const BOUNDS: Bounds = Bounds {
 
 #[derive(Clone, PartialEq)]
 pub struct Point {
-    pub x: f64,
-    pub y: f64,
+    pub x: f32,
+    pub y: f32,
 }
 
 pub struct Bounds {
@@ -113,19 +115,19 @@ pub unsafe fn make_tree(
         let point: &Point = &(*tree).point;
         let horizontal: bool = (*tree).horizontal;
         let bounds: &Bounds = &(*tree).bounds;
-        let lower_x: f64 = bounds.lower.x;
-        let lower_y: f64 = bounds.lower.y;
-        let upper_x: f64 = bounds.upper.x;
-        let upper_y: f64 = bounds.upper.y;
+        let lower_x: f32 = bounds.lower.x;
+        let lower_y: f32 = bounds.lower.y;
+        let upper_x: f32 = bounds.upper.x;
+        let upper_y: f32 = bounds.upper.y;
         let (left_bounds, right_bounds): (Bounds, Bounds) = {
             if horizontal {
-                let x: f64 = point.x;
+                let x: f32 = point.x;
                 (
                     make_bounds!(lower_x, lower_y, x, upper_y),
                     make_bounds!(x, lower_y, upper_x, upper_y),
                 )
             } else {
-                let y: f64 = point.y;
+                let y: f32 = point.y;
                 (
                     make_bounds!(lower_x, lower_y, upper_x, y),
                     make_bounds!(lower_x, y, upper_x, upper_y),
@@ -183,15 +185,15 @@ pub unsafe fn make_tree(
     }
 }
 
-fn squared_distance(a: &Point, b: &Point) -> f64 {
-    let x: f64 = a.x - b.x;
-    let y: f64 = a.y - b.y;
+fn squared_distance(a: &Point, b: &Point) -> f32 {
+    let x: f32 = a.x - b.x;
+    let y: f32 = a.y - b.y;
     (x * x) + (y * y)
 }
 
-fn bounds_to_point_squared_distance(bounds: &Bounds, point: &Point) -> f64 {
-    let x: f64 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
-    let y: f64 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
+fn bounds_to_point_squared_distance(bounds: &Bounds, point: &Point) -> f32 {
+    let x: f32 = point.x - bounds.lower.x.max(point.x.min(bounds.upper.x));
+    let y: f32 = point.y - bounds.lower.y.max(point.y.min(bounds.upper.y));
     (x * x) + (y * y)
 }
 

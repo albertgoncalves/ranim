@@ -35,7 +35,7 @@ macro_rules! make_points {
 
 fn make_tree(b: &mut Bencher) {
     let mut rng: ThreadRng = rand::thread_rng();
-    let uniform: Uniform<f64> =
+    let uniform: Uniform<f32> =
         Uniform::new_inclusive(r#mod::POINT_RNG_LOWER, r#mod::POINT_RNG_UPPER);
     let mut points: ArrayVec<[Point; r#mod::CAPACITY]> =
         make_points!(rng, uniform);
@@ -49,7 +49,7 @@ fn make_tree(b: &mut Bencher) {
 
 fn search_trees(b: &mut Bencher) {
     let mut rng: ThreadRng = rand::thread_rng();
-    let uniform: Uniform<f64> =
+    let uniform: Uniform<f32> =
         Uniform::new_inclusive(r#mod::POINT_RNG_LOWER, r#mod::POINT_RNG_UPPER);
     let mut points: ArrayVec<[Point; r#mod::CAPACITY]> =
         make_points!(rng, uniform);

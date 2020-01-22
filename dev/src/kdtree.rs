@@ -1,3 +1,5 @@
+#![allow(clippy::cast_lossless)]
+
 mod kdtree_lib;
 
 use arrayvec::ArrayVec;
@@ -30,8 +32,8 @@ unsafe fn render(
             graphics::ellipse(
                 kdtree_lib::RED,
                 [
-                    (*neighbor).x - kdtree_lib::RADIUS_2,
-                    (*neighbor).y - kdtree_lib::RADIUS_2,
+                    ((*neighbor).x as f64) - kdtree_lib::RADIUS_2,
+                    ((*neighbor).y as f64) - kdtree_lib::RADIUS_2,
                     kdtree_lib::RADIUS_4,
                     kdtree_lib::RADIUS_4,
                 ],
@@ -41,13 +43,13 @@ unsafe fn render(
         }
         for tree in trees {
             let point: &Point = &tree.point;
-            let x: f64 = point.x;
-            let y: f64 = point.y;
+            let x: f64 = point.x as f64;
+            let y: f64 = point.y as f64;
             let bounds: &Bounds = &tree.bounds;
             let line: [f64; 4] = if tree.horizontal {
-                [x, bounds.lower.y, x, bounds.upper.y]
+                [x, bounds.lower.y as f64, x, bounds.upper.y as f64]
             } else {
-                [bounds.lower.x, y, bounds.upper.x, y]
+                [bounds.lower.x as f64, y, bounds.upper.x as f64, y]
             };
             graphics::ellipse(
                 kdtree_lib::LIGHT_GRAY,
@@ -71,10 +73,10 @@ unsafe fn render(
         graphics::ellipse(
             kdtree_lib::TEAL,
             [
-                point.x - kdtree_lib::SEARCH_RADIUS,
-                point.y - kdtree_lib::SEARCH_RADIUS,
-                kdtree_lib::SEARCH_RADIUS_2,
-                kdtree_lib::SEARCH_RADIUS_2,
+                (point.x - kdtree_lib::SEARCH_RADIUS) as f64,
+                (point.y - kdtree_lib::SEARCH_RADIUS) as f64,
+                kdtree_lib::SEARCH_RADIUS_2 as f64,
+                kdtree_lib::SEARCH_RADIUS_2 as f64,
             ],
             transform,
             gl,
@@ -97,11 +99,11 @@ fn main() {
     let mut events: Events = Events::new(EventSettings::new());
     let mut gl: GlGraphics = GlGraphics::new(opengl);
     let mut rng: ThreadRng = rand::thread_rng();
-    let uniform_init: Uniform<f64> = Uniform::new_inclusive(
+    let uniform_init: Uniform<f32> = Uniform::new_inclusive(
         kdtree_lib::POINT_RNG_LOWER,
         kdtree_lib::POINT_RNG_UPPER,
     );
-    let uniform_walk: Uniform<f64> = Uniform::new_inclusive(
+    let uniform_walk: Uniform<f32> = Uniform::new_inclusive(
         kdtree_lib::WALK_RNG_LOWER,
         kdtree_lib::WALK_RNG_UPPER,
     );
