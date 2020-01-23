@@ -173,7 +173,7 @@ fn main() {
                 elapsed += clock.elapsed().as_secs_f32();
                 clock = Instant::now();
                 if 1.0 < elapsed {
-                    print!("\r{:>7.2} fps", (frames as f32) / elapsed);
+                    print!("{:>8.2} fps\r", (frames as f32) / elapsed);
                     io::stdout().flush().unwrap();
                     frames = 0;
                     elapsed = 0.0;
