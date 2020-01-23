@@ -5,8 +5,8 @@ use std::ptr;
 use std::slice;
 
 pub const WINDOW_EDGE: f64 = 800.0;
-pub const WINDOW_EDGE_HALF: f32 = (WINDOW_EDGE as f32) / 2.0;
-pub const WINDOW_EDGE_HALF_MINUS: f32 = -WINDOW_EDGE_HALF;
+const WINDOW_EDGE_HALF: f32 = (WINDOW_EDGE as f32) / 2.0;
+const WINDOW_EDGE_HALF_MINUS: f32 = -WINDOW_EDGE_HALF;
 
 pub const ANTI_ALIAS: u8 = 4;
 

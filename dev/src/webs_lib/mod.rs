@@ -6,8 +6,8 @@ use rand::rngs::ThreadRng;
 use rand::Rng;
 
 pub const WINDOW_EDGE: f64 = 800.0;
-pub const WINDOW_EDGE_HALF: f32 = (WINDOW_EDGE as f32) / 2.0;
-pub const WINDOW_EDGE_HALF_MINUS: f32 = -WINDOW_EDGE_HALF;
+const WINDOW_EDGE_HALF: f32 = (WINDOW_EDGE as f32) / 2.0;
+const WINDOW_EDGE_HALF_MINUS: f32 = -WINDOW_EDGE_HALF;
 
 pub const ANTI_ALIAS: u8 = 4;
 
@@ -39,8 +39,8 @@ pub const EDGES_LIMIT: usize = EDGES_CAP - 3;
 pub const POINT_RNG_UPPER: f32 = WINDOW_EDGE_HALF;
 pub const POINT_RNG_LOWER: f32 = WINDOW_EDGE_HALF_MINUS;
 
-pub const POINT_DRAG: f32 = 0.0025;
-pub const NEIGHBOR_DISTANCE_SQUARED: f32 = 100.0;
+const POINT_DRAG: f32 = 0.0025;
+const NEIGHBOR_DISTANCE_SQUARED: f32 = 100.0;
 
 pub struct Point {
     pub x: f32,

@@ -6,8 +6,8 @@ use rand::rngs::ThreadRng;
 use rand::Rng;
 
 pub const WINDOW_EDGE: f64 = 800.0;
-pub const WINDOW_EDGE_HALF: f32 = (WINDOW_EDGE as f32) / 2.0;
-pub const WINDOW_EDGE_HALF_MINUS: f32 = -WINDOW_EDGE_HALF;
+const WINDOW_EDGE_HALF: f32 = (WINDOW_EDGE as f32) / 2.0;
+const WINDOW_EDGE_HALF_MINUS: f32 = -WINDOW_EDGE_HALF;
 
 pub const ANTI_ALIAS: u8 = 4;
 
@@ -30,13 +30,13 @@ pub const POINT_RNG_LOWER: f32 = -POINT_RNG_UPPER;
 pub const WALK_RNG_UPPER: f32 = 0.15;
 pub const WALK_RNG_LOWER: f32 = -WALK_RNG_UPPER;
 
-pub const NEIGHBOR_RADIUS_SQUARED: f32 = 1000.0;
-pub const SEARCH_RADIUS_SQUARED: f32 = 2000.0;
+const NEIGHBOR_RADIUS_SQUARED: f32 = 1000.0;
+const SEARCH_RADIUS_SQUARED: f32 = 2000.0;
 
-pub const DRAG_ATTRACT: f32 = 35.0;
-pub const DRAG_REJECT: f32 = 25.0;
+const DRAG_ATTRACT: f32 = 35.0;
+const DRAG_REJECT: f32 = 25.0;
 
-pub const BOUNDS: Bounds = Bounds {
+const BOUNDS: Bounds = Bounds {
     lower: Point {
         x: WINDOW_EDGE_HALF_MINUS as f32,
         y: WINDOW_EDGE_HALF_MINUS as f32,
