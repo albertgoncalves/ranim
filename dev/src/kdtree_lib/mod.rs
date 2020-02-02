@@ -99,7 +99,7 @@ pub unsafe fn make_tree(
     let mut stack: ArrayVec<[(*mut Tree, &mut [Point]); CAPACITY]> =
         ArrayVec::new();
     let n: usize = points.len();
-    if 0 < n {
+    if n != 0 {
         let point: Point = get_median!(points, n, horizontal);
         trees.push(Tree {
             point,
@@ -110,7 +110,7 @@ pub unsafe fn make_tree(
         });
         stack.push((trees.last_mut().unwrap(), points));
     }
-    while 0 < stack.len() {
+    while stack.len() != 0 {
         let (tree, points): (*mut Tree, &mut [Point]) = stack.pop().unwrap();
         let point: &Point = &(*tree).point;
         let horizontal: bool = (*tree).horizontal;
@@ -178,7 +178,7 @@ pub unsafe fn make_tree(
             stack.push((right_tree, right_points));
         }
     }
-    if 0 < trees.len() {
+    if trees.len() != 0 {
         &mut trees[0]
     } else {
         ptr::null_mut()
@@ -204,7 +204,7 @@ pub unsafe fn search_trees(
 ) {
     let mut stack: ArrayVec<[*mut Tree; CAPACITY]> = ArrayVec::new();
     stack.push(tree);
-    while 0 < stack.len() {
+    while stack.len() != 0 {
         let tree: *mut Tree = stack.pop().unwrap();
         let bounds: &Bounds = &(*tree).bounds;
         if bounds_to_point_squared_distance(bounds, point)

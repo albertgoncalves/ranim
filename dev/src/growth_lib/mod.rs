@@ -163,7 +163,7 @@ fn search_trees(
 ) {
     let mut stack: ArrayVec<[TreeIndex; CAPACITY]> = ArrayVec::new();
     stack.push(index);
-    while 0 < stack.len() {
+    while stack.len() != 0 {
         let index: TreeIndex = stack.pop().unwrap();
         let tree: &Tree = &trees[index];
         if bounds_to_point_squared_distance(&tree.bounds, point)
@@ -280,7 +280,7 @@ pub fn update_nodes(
             };
             search_trees(point, &trees, index, &mut neighbors);
             let n: usize = neighbors.len();
-            if 0 < n {
+            if n != 0 {
                 let mut x: f32 = 0.0;
                 let mut y: f32 = 0.0;
                 for neighbor_index in neighbors.drain(..n) {
