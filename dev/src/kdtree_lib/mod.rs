@@ -110,7 +110,7 @@ pub unsafe fn make_tree(
         });
         stack.push((trees.last_mut().unwrap(), points));
     }
-    while stack.len() != 0 {
+    while !stack.is_empty() {
         let (tree, points): (*mut Tree, &mut [Point]) = stack.pop().unwrap();
         let point: &Point = &(*tree).point;
         let horizontal: bool = (*tree).horizontal;
@@ -178,10 +178,10 @@ pub unsafe fn make_tree(
             stack.push((right_tree, right_points));
         }
     }
-    if trees.len() != 0 {
-        &mut trees[0]
-    } else {
+    if trees.is_empty() {
         ptr::null_mut()
+    } else {
+        &mut trees[0]
     }
 }
 
@@ -204,7 +204,7 @@ pub unsafe fn search_trees(
 ) {
     let mut stack: ArrayVec<[*mut Tree; CAPACITY]> = ArrayVec::new();
     stack.push(tree);
-    while stack.len() != 0 {
+    while !stack.is_empty() {
         let tree: *mut Tree = stack.pop().unwrap();
         let bounds: &Bounds = &(*tree).bounds;
         if bounds_to_point_squared_distance(bounds, point)

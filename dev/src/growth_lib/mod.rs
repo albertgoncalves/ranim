@@ -163,7 +163,7 @@ fn search_trees(
 ) {
     let mut stack: ArrayVec<[TreeIndex; CAPACITY]> = ArrayVec::new();
     stack.push(index);
-    while stack.len() != 0 {
+    while !stack.is_empty() {
         let index: TreeIndex = stack.pop().unwrap();
         let tree: &Tree = &trees[index];
         if bounds_to_point_squared_distance(&tree.bounds, point)
