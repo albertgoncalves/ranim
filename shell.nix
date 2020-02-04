@@ -36,7 +36,7 @@ in
         ];
         shellHook = ''
             export LD_LIBRARY_PATH="$APPEND_LIBRARY_PATH:$LD_LIBRARY_PATH"
-            expression=$(grep "export" < nixGL/result/bin/nixGLNvidia)
+            expression=$(grep "export" < nixGL/result/bin/nixGL*)
             if [ -n "$expression" ]; then
                 eval "$expression"
             fi
