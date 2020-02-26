@@ -1,6 +1,7 @@
 #![allow(clippy::cast_possible_truncation)]
 
 use arrayvec::ArrayVec;
+use pdqselect;
 use std::ptr;
 use std::slice;
 
@@ -82,9 +83,13 @@ macro_rules! get_median {
     ($points:expr, $n:expr, $horizontal:expr $(,)?) => {{
         let median: usize = $n / 2;
         if $horizontal {
-            $points.sort_unstable_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
+            pdqselect::select_by($points, median, |a, b| {
+                a.x.partial_cmp(&b.x).unwrap()
+            });
         } else {
-            $points.sort_unstable_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
+            pdqselect::select_by($points, median, |a, b| {
+                a.y.partial_cmp(&b.y).unwrap()
+            });
         }
         $points[median].clone()
     }};

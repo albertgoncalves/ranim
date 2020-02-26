@@ -199,8 +199,9 @@ pub unsafe fn insert(
              *                     ->         |
              *       `r.a`---`r.b`    `r.a`--`q`--`r.b`
              */
-            intersections
-                .sort_by(|a, b| a.point.x.partial_cmp(&b.point.x).unwrap());
+            intersections.sort_unstable_by(|a, b| {
+                a.point.x.partial_cmp(&b.point.x).unwrap()
+            });
             let i: usize = rng.gen_range(0, n - 1);
             let l_intersection: Intersection = intersections.remove(i);
             let r_intersection: Intersection = intersections.remove(i);

@@ -1,6 +1,7 @@
 #![allow(clippy::cast_possible_truncation)]
 
 use arrayvec::ArrayVec;
+use pdqselect;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
@@ -107,7 +108,9 @@ fn make_tree(
     let upper_y: f32 = bounds.upper.y;
     let (point, left_bounds, right_bounds): (Point, Bounds, Bounds) = {
         if horizontal {
-            points.sort_unstable_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
+            pdqselect::select_by(points, median, |a, b| {
+                a.x.partial_cmp(&b.x).unwrap()
+            });
             let point: Point = points[median].clone();
             let x: f32 = point.x;
             (
@@ -116,7 +119,9 @@ fn make_tree(
                 make_bounds!(x, lower_y, upper_x, upper_y),
             )
         } else {
-            points.sort_unstable_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
+            pdqselect::select_by(points, median, |a, b| {
+                a.y.partial_cmp(&b.y).unwrap()
+            });
             let point: Point = points[median].clone();
             let y: f32 = point.y;
             (
