@@ -28,7 +28,6 @@ in
         ] ++ shared;
         APPEND_LIBRARY_PATH = stdenv.lib.makeLibraryPath [
             libGL
-            linuxPackages.nvidia_x11
             xorg.libX11
             xorg.libXcursor
             xorg.libXi
