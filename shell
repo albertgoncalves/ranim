@@ -8,7 +8,7 @@ else
         (
             cd nixGL/ || exit 1
             printf \
-                "Which Linux machine is this?\n(1) Ubuntu\n(2) Manjaro\n1/2?: "
+                "Which Linux machine is this?\n1) Ubuntu\n2) Manjaro\n1/2?: "
             read -r selection
             if [ "$selection" == "1" ]; then
                 driver_version=$(
