@@ -124,16 +124,18 @@ pub unsafe fn make_tree(
         let lower_y: f32 = bounds.lower.y;
         let upper_x: f32 = bounds.upper.x;
         let upper_y: f32 = bounds.upper.y;
-        let (left_bounds, right_bounds): (Bounds, Bounds) = {
+        let (horizontal, left_bounds, right_bounds): (bool, Bounds, Bounds) = {
             if horizontal {
                 let x: f32 = point.x;
                 (
+                    false,
                     make_bounds!(lower_x, lower_y, x, upper_y),
                     make_bounds!(x, lower_y, upper_x, upper_y),
                 )
             } else {
                 let y: f32 = point.y;
                 (
+                    true,
                     make_bounds!(lower_x, lower_y, upper_x, y),
                     make_bounds!(lower_x, y, upper_x, upper_y),
                 )
@@ -150,13 +152,12 @@ pub unsafe fn make_tree(
             )
         };
         if !left_points.is_empty() {
-            let left_horizontal: bool = !horizontal;
             let left_point: Point =
-                get_median!(left_points, left_points.len(), left_horizontal);
+                get_median!(left_points, left_points.len(), horizontal);
             trees.push(Tree {
                 point: left_point,
                 bounds: left_bounds,
-                horizontal: left_horizontal,
+                horizontal,
                 left: ptr::null_mut(),
                 right: ptr::null_mut(),
             });
@@ -165,16 +166,12 @@ pub unsafe fn make_tree(
             stack.push((left_tree, left_points));
         }
         if !right_points.is_empty() {
-            let right_horizontal: bool = !horizontal;
-            let right_point: Point = get_median!(
-                right_points,
-                right_points.len(),
-                right_horizontal,
-            );
+            let right_point: Point =
+                get_median!(right_points, right_points.len(), horizontal,);
             trees.push(Tree {
                 point: right_point,
                 bounds: right_bounds,
-                horizontal: right_horizontal,
+                horizontal,
                 left: ptr::null_mut(),
                 right: ptr::null_mut(),
             });

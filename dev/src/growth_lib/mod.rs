@@ -106,7 +106,12 @@ fn make_tree(
     let lower_y: f32 = bounds.lower.y;
     let upper_x: f32 = bounds.upper.x;
     let upper_y: f32 = bounds.upper.y;
-    let (point, left_bounds, right_bounds): (Point, Bounds, Bounds) = {
+    let (point, horizontal, left_bounds, right_bounds): (
+        Point,
+        bool,
+        Bounds,
+        Bounds,
+    ) = {
         if horizontal {
             pdqselect::select_by(points, median, |a, b| {
                 a.x.partial_cmp(&b.x).unwrap()
@@ -115,6 +120,7 @@ fn make_tree(
             let x: f32 = point.x;
             (
                 point,
+                false,
                 make_bounds!(lower_x, lower_y, x, upper_y),
                 make_bounds!(x, lower_y, upper_x, upper_y),
             )
@@ -126,17 +132,18 @@ fn make_tree(
             let y: f32 = point.y;
             (
                 point,
+                true,
                 make_bounds!(lower_x, lower_y, upper_x, y),
                 make_bounds!(lower_x, y, upper_x, upper_y),
             )
         }
     };
     let left_index: Option<TreeIndex> =
-        make_tree(trees, &mut points[..median], !horizontal, left_bounds);
+        make_tree(trees, &mut points[..median], horizontal, left_bounds);
     let right_index: Option<TreeIndex> = make_tree(
         trees,
         &mut points[(median + 1)..],
-        !horizontal,
+        horizontal,
         right_bounds,
     );
     trees.push(Tree {
