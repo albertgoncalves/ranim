@@ -1,7 +1,6 @@
 #![allow(clippy::cast_possible_truncation)]
 
 use arrayvec::ArrayVec;
-use pdqselect;
 use std::ptr;
 use std::slice;
 

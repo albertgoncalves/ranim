@@ -1,7 +1,6 @@
 #![allow(clippy::cast_possible_truncation)]
 
 use arrayvec::ArrayVec;
-use pdqselect;
 use rand::distributions::Uniform;
 use rand::rngs::ThreadRng;
 use rand::Rng;
