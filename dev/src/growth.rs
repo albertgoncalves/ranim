@@ -111,7 +111,7 @@ fn main() {
                 print!("{:>8.2} fps\r", (frames as f32) / elapsed);
                 io::stdout().flush().unwrap();
                 frames = 0;
-                elapsed = 0.0;
+                elapsed -= 1.0;
             };
         }
     }
