@@ -25,64 +25,67 @@ const RECT_PAD_2: f64 = RECT_PAD * 2.0;
 
 const POINT_RNG_UPPER: f64 = WINDOW_EDGE_HALF;
 const POINT_RNG_LOWER: f64 = WINDOW_EDGE_HALF_MINUS;
-const POINT_SPEED_INIT: f64 = 0.0;
+
+const SPEED_INIT: f64 = 0.0;
+const SPEED_INCREMENT: f64 = 0.015;
+const TRAIL: f64 = 7.5;
 
 const CAPACITY: usize = 20;
 const CAPACITY_MINUS_1: usize = CAPACITY - 1;
-const SPEED_INCREMENT: f64 = 0.015;
-const RENDER_SCALE: f64 = 7.5;
 
 const RELOAD_FRAME_INTERVAL: u16 = 60 * 8;
 
-#[allow(clippy::comparison_chain)]
-fn update(
-    xs: &mut [f64],
-    ys: &mut [f64],
-    x_speeds: &mut [f64],
-    y_speeds: &mut [f64],
-) {
+#[derive(Clone, Copy)]
+struct Point {
+    x: f64,
+    y: f64,
+}
+
+#[derive(Clone, Copy)]
+struct Orbiter {
+    pos: Point,
+    speed: Point,
+}
+
+unsafe fn update(orbiters: &mut [Orbiter]) {
     for i in 0..CAPACITY {
         for j in i..CAPACITY {
-            if xs[i] < xs[j] {
-                x_speeds[i] += SPEED_INCREMENT;
-                x_speeds[j] -= SPEED_INCREMENT;
-            } else if xs[j] < xs[i] {
-                x_speeds[i] -= SPEED_INCREMENT;
-                x_speeds[j] += SPEED_INCREMENT;
+            let a: *mut Orbiter = &mut orbiters[i] as *mut Orbiter;
+            let b: *mut Orbiter = &mut orbiters[j] as *mut Orbiter;
+            if (*a).pos.x < (*b).pos.x {
+                (*a).speed.x += SPEED_INCREMENT;
+                (*b).speed.x -= SPEED_INCREMENT;
+            } else if (*b).pos.x < (*a).pos.x {
+                (*a).speed.x -= SPEED_INCREMENT;
+                (*b).speed.x += SPEED_INCREMENT;
             }
-            if ys[i] < ys[j] {
-                y_speeds[i] += SPEED_INCREMENT;
-                y_speeds[j] -= SPEED_INCREMENT;
-            } else if ys[j] < ys[i] {
-                y_speeds[i] -= SPEED_INCREMENT;
-                y_speeds[j] += SPEED_INCREMENT;
+            if (*a).pos.y < (*b).pos.y {
+                (*a).speed.y += SPEED_INCREMENT;
+                (*b).speed.y -= SPEED_INCREMENT;
+            } else if (*b).pos.y < (*a).pos.y {
+                (*a).speed.y -= SPEED_INCREMENT;
+                (*b).speed.y += SPEED_INCREMENT;
             }
         }
     }
-    for i in 0..CAPACITY {
-        xs[i] += x_speeds[i];
-        ys[i] += y_speeds[i];
+    for o in orbiters {
+        o.pos.x += o.speed.x;
+        o.pos.y += o.speed.y;
     }
 }
 
-fn render(
-    gl: &mut GlGraphics,
-    args: &RenderArgs,
-    xs: &[f64],
-    ys: &[f64],
-    x_speeds: &[f64],
-    y_speeds: &[f64],
-) {
+fn render(gl: &mut GlGraphics, args: &RenderArgs, orbiters: &[Orbiter]) {
     gl.draw(args.viewport(), |context, gl| {
         let [width, height]: [f64; 2] = args.window_size;
         let transform: Matrix2d =
             context.transform.trans(width / 2.0, height / 2.0);
         graphics::clear(DARK_GRAY, gl);
         {
-            let x: f64 = xs[CAPACITY_MINUS_1];
-            let y: f64 = ys[CAPACITY_MINUS_1];
-            let x_speed: f64 = x - (x_speeds[CAPACITY_MINUS_1] * RENDER_SCALE);
-            let y_speed: f64 = y - (y_speeds[CAPACITY_MINUS_1] * RENDER_SCALE);
+            let o: &Orbiter = &orbiters[CAPACITY_MINUS_1];
+            let x: f64 = o.pos.x;
+            let y: f64 = o.pos.y;
+            let x_speed: f64 = x - (o.speed.x * TRAIL);
+            let y_speed: f64 = y - (o.speed.y * TRAIL);
             let (min_x, width): (f64, f64) = {
                 if x < x_speed {
                     (x, x_speed - x)
@@ -116,15 +119,16 @@ fn render(
                 gl,
             );
         }
-        for i in 0..CAPACITY_MINUS_1 {
-            let x: f64 = xs[i];
-            let y: f64 = ys[i];
-            let x_speed: f64 = x - (x_speeds[i] * RENDER_SCALE);
-            let y_speed: f64 = y - (y_speeds[i] * RENDER_SCALE);
+        for o in orbiters.iter().take(CAPACITY_MINUS_1) {
             graphics::line(
                 LIGHT_GRAY,
                 LINE_WIDTH,
-                [x, y, x_speed, y_speed],
+                [
+                    o.pos.x,
+                    o.pos.y,
+                    o.pos.x - (o.speed.x * TRAIL),
+                    o.pos.y - (o.speed.y * TRAIL),
+                ],
                 transform,
                 gl,
             );
@@ -147,26 +151,28 @@ fn main() {
     let mut rng: ThreadRng = rand::thread_rng();
     let uniform: Uniform<f64> =
         Uniform::new_inclusive(POINT_RNG_LOWER, POINT_RNG_UPPER);
-    let mut xs: [f64; CAPACITY] = [0.0; CAPACITY];
-    let mut ys: [f64; CAPACITY] = [0.0; CAPACITY];
-    let mut x_speeds: [f64; CAPACITY] = [0.0; CAPACITY];
-    let mut y_speeds: [f64; CAPACITY] = [0.0; CAPACITY];
+    let mut orbiters: [Orbiter; CAPACITY] = [Orbiter {
+        pos: Point { x: 0.0, y: 0.0 },
+        speed: Point { x: 0.0, y: 0.0 },
+    }; CAPACITY];
     let mut counter: u16 = RELOAD_FRAME_INTERVAL + 1;
     while let Some(event) = events.next(&mut window) {
         if let Some(args) = event.render_args() {
             if RELOAD_FRAME_INTERVAL < counter {
-                for i in 0..CAPACITY {
-                    xs[i] = rng.sample(uniform);
-                    ys[i] = rng.sample(uniform);
-                    x_speeds[i] = POINT_SPEED_INIT;
-                    y_speeds[i] = POINT_SPEED_INIT;
+                for o in &mut orbiters {
+                    o.pos.x = rng.sample(uniform);
+                    o.pos.y = rng.sample(uniform);
+                    o.speed.x = SPEED_INIT;
+                    o.speed.y = SPEED_INIT;
                 }
                 counter = 0;
             } else {
-                update(&mut xs, &mut ys, &mut x_speeds, &mut y_speeds);
+                unsafe {
+                    update(&mut orbiters);
+                }
                 counter += 1;
             }
-            render(&mut gl, &args, &xs, &ys, &x_speeds, &y_speeds);
+            render(&mut gl, &args, &orbiters);
         }
     }
 }
