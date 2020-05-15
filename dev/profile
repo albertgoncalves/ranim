@@ -11,5 +11,5 @@ sudo sh -c "echo 0 > /proc/sys/kernel/kptr_restrict"
 perf record --call-graph fp "$1"
 perf report
 rm perf.data*
-valgrind --tool=cachegrind "$1"
+valgrind --tool=cachegrind --branch-sim=yes "$1"
 rm cachegrind.out.*
