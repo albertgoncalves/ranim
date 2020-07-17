@@ -169,11 +169,11 @@ fn bounds_to_point_squared_distance(bounds: &Bounds, point: &Point) -> f32 {
 fn search_trees(
     point: &Point,
     trees: &ArrayVec<[Tree; CAPACITY]>,
-    index: TreeIndex,
+    init_index: TreeIndex,
     neighbors: &mut ArrayVec<[TreeIndex; CAPACITY]>,
 ) {
     let mut stack: ArrayVec<[TreeIndex; CAPACITY]> = ArrayVec::new();
-    stack.push(index);
+    stack.push(init_index);
     while !stack.is_empty() {
         let index: TreeIndex = stack.pop().unwrap();
         let tree: &Tree = &trees[index];

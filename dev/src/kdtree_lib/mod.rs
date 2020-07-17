@@ -96,15 +96,15 @@ macro_rules! get_median {
 
 pub unsafe fn make_tree(
     trees: &mut ArrayVec<[Tree; CAPACITY]>,
-    points: &mut [Point],
+    init_points: &mut [Point],
     horizontal: bool,
     bounds: Bounds,
 ) -> *mut Tree {
     let mut stack: ArrayVec<[(*mut Tree, &mut [Point]); CAPACITY]> =
         ArrayVec::new();
-    let n: usize = points.len();
+    let n: usize = init_points.len();
     if n != 0 {
-        let point: Point = get_median!(points, n, horizontal);
+        let point: Point = get_median!(init_points, n, horizontal);
         trees.push(Tree {
             point,
             bounds,
@@ -112,7 +112,7 @@ pub unsafe fn make_tree(
             left: ptr::null_mut(),
             right: ptr::null_mut(),
         });
-        stack.push((trees.last_mut().unwrap(), points));
+        stack.push((trees.last_mut().unwrap(), init_points));
     }
     while !stack.is_empty() {
         let (tree, points): (*mut Tree, &mut [Point]) = stack.pop().unwrap();
@@ -141,13 +141,13 @@ pub unsafe fn make_tree(
             }
         };
         let (left_points, right_points): (&mut [Point], &mut [Point]) = {
-            let n: usize = points.len();
-            let median: usize = points.len() / 2;
+            let m: usize = points.len();
+            let median: usize = m / 2;
             let points: *mut Point = points.as_mut_ptr();
             let offset: usize = median + 1;
             (
                 slice::from_raw_parts_mut(points, median),
-                slice::from_raw_parts_mut(points.add(offset), n - offset),
+                slice::from_raw_parts_mut(points.add(offset), m - offset),
             )
         };
         if !left_points.is_empty() {
@@ -200,11 +200,11 @@ fn bounds_to_point_squared_distance(bounds: &Bounds, point: &Point) -> f32 {
 
 pub unsafe fn search_trees(
     point: &Point,
-    tree: *mut Tree,
+    init_tree: *mut Tree,
     neighbors: &mut ArrayVec<[*const Point; CAPACITY]>,
 ) {
     let mut stack: ArrayVec<[*mut Tree; CAPACITY]> = ArrayVec::new();
-    stack.push(tree);
+    stack.push(init_tree);
     while !stack.is_empty() {
         let tree: *mut Tree = stack.pop().unwrap();
         let bounds: &Bounds = &(*tree).bounds;
